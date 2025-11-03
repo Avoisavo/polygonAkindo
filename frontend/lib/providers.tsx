@@ -8,21 +8,15 @@ import {
 } from '@rainbow-me/rainbowkit';
 import { WagmiProvider } from 'wagmi';
 import {
-  mainnet,
-  polygon,
-  optimism,
-  arbitrum,
-  base,
-} from 'wagmi/chains';
-import {
   QueryClientProvider,
   QueryClient,
 } from "@tanstack/react-query";
+import { chains } from './networkConfig';
 
 const config = getDefaultConfig({
   appName: 'PolygonAkindo',
   projectId: 'YOUR_PROJECT_ID', // Get your projectId from https://cloud.walletconnect.com/
-  chains: [mainnet, polygon, optimism, arbitrum, base],
+  chains,
   ssr: true,
 });
 
