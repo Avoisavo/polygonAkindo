@@ -117,7 +117,7 @@ export function RegistrationForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full px-4 py-3 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+          className="w-full px-4 py-3 text-white bg-black rounded-md hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
         >
           {isLoading ? "Registering..." : "Register Website"}
         </button>
