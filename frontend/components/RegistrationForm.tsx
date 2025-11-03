@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { ShineBorder } from "@/registry/magicui/shine-border"
 
 export function RegistrationForm() {
   const router = useRouter()
@@ -46,8 +47,13 @@ export function RegistrationForm() {
   }
 
   return (
-    <div className="p-8 border border-gray-300 rounded-lg bg-white shadow-sm">
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="relative p-8 border border-gray-300 rounded-lg bg-white shadow-sm overflow-hidden">
+      <ShineBorder
+        borderWidth={2}
+        duration={10}
+        shineColor={["#3b82f6", "#8b5cf6", "#ec4899"]}
+      />
+      <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
         <div className="space-y-2">
           <label htmlFor="siteName" className="block text-sm font-medium">
             Website Name
