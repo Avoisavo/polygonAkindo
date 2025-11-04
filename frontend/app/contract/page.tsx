@@ -7,7 +7,6 @@ import ConnectWallet from './ConnectWallet'
 import { x402polyABI } from '../../lib/x402polyABI'
 import { erc20ABI } from '../../lib/erc20ABI'
 
-// Contract address from deployment
 const X402POLY_CONTRACT = '0xe5E43468bcBd09391bF73d0D43a624537c46bBa9' as const
 const PAYMENT_TOKEN = '0x41E94EB019c0762f9cBFCFeE217e8e5252C3fE89' as const
 
