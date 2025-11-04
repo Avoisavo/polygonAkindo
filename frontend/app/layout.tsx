@@ -4,7 +4,6 @@ import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit'
 import { useState } from 'react'
-import { config } from '../lib/wagmi'
 import { Geist, Geist_Mono } from "next/font/google";
 import '@rainbow-me/rainbowkit/styles.css'
 import "./globals.css";
