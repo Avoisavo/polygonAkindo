@@ -1,5 +1,5 @@
-const OpenAI = require('openai');
-const { functionDefinitions, executeFunction } = require('./functions');
+import OpenAI from 'openai';
+import { functionDefinitions, executeFunction } from './functions/index.js';
 
 // OpenAI client will be initialized when needed
 let openai = null;
@@ -90,6 +90,6 @@ async function processMessage(userMessage) {
   }
 }
 
-module.exports = {
+export {
   processMessage
 };

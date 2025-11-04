@@ -1,4 +1,4 @@
-const { scrapeWebsite } = require('./scrapeWebsite');
+import { scrapeWebsite } from './scrapeWebsite.js';
 
 // Available functions for the AI agent
 const functions = {
@@ -38,7 +38,7 @@ async function executeFunction(functionName, args) {
   return result;
 }
 
-module.exports = {
+export {
   functions,
   functionDefinitions,
   executeFunction

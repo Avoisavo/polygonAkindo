@@ -1,5 +1,5 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
+import axios from 'axios';
+import * as cheerio from 'cheerio';
 
 /**
  * Scrape website content from a given URL
@@ -103,22 +103,23 @@ async function scrapeWebsite(url) {
   }
 }
 
-module.exports = {
-  scrapeWebsite,
-  
-  // Function metadata for AI agent
-  metadata: {
-    name: 'scrapeWebsite',
-    description: 'Scrape content from a website URL and return the main text content',
-    parameters: {
-      type: 'object',
-      properties: {
-        url: {
-          type: 'string',
-          description: 'The website URL to scrape (must include http:// or https://)'
-        }
-      },
-      required: ['url']
-    }
+// Function metadata for AI agent
+const metadata = {
+  name: 'scrapeWebsite',
+  description: 'Scrape content from a website URL and return the main text content',
+  parameters: {
+    type: 'object',
+    properties: {
+      url: {
+        type: 'string',
+        description: 'The website URL to scrape (must include http:// or https://)'
+      }
+    },
+    required: ['url']
   }
+};
+
+export {
+  scrapeWebsite,
+  metadata
 };

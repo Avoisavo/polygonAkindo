@@ -1,5 +1,5 @@
-const readline = require('readline');
-const fetch = require('node-fetch');
+import readline from 'readline';
+import fetch from 'node-fetch';
 
 // Create readline interface for terminal input
 const rl = readline.createInterface({
