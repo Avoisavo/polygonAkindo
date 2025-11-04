@@ -57,6 +57,12 @@ async function processMessage(userMessage) {
       
       const functionResult = await executeFunction(functionName, functionArgs);
       
+      // Check if function result is a payment request
+      if (functionResult.paymentRequired === true) {
+        console.log('💳 Payment required - returning payment request to user');
+        return functionResult; // Return payment request directly to frontend
+      }
+      
       // Add function call and result to conversation
       messages.push(responseMessage);
       messages.push({
