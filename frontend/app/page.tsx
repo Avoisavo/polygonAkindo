@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Orbitron, Space_Grotesk } from 'next/font/google';
 import DecryptedText from '@/components/DecryptedText';
+import SplashCursor from '@/components/SplashCursor';
 
 const orbitron = Orbitron({
   subsets: ['latin'],
@@ -19,7 +20,7 @@ export default function Home() {
 
   return (
     <main className="w-full min-h-screen relative flex flex-col">
-      
+      <SplashCursor />
       <div className="absolute inset-0 flex items-center justify-center z-20" style={{ marginTop: '-8rem' }}>
         <div className="flex flex-col items-center gap-6">
           <h1 className={`text-6xl md:text-8xl font-black text-white ${orbitron.className}`} 
