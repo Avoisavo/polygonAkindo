@@ -2,11 +2,38 @@
 
 import { useState } from 'react';
 import { sendMessageToAgent } from '@/lib/api';
+import { useAccount, useWalletClient } from 'wagmi';
+import { parseEther, getAddress } from 'viem';
+
+interface PaymentRequest {
+  type: string;
+  url: string;
+  payment: {
+    id: string;
+    price: string;
+    recipientAddress: string;
+    network: string;
+    description: string;
+    facilitatorUrl?: string;
+    nonce?: string;
+  };
+  message: string;
+  instructions?: {
+    step1: string;
+    step2: string;
+    step3: string;
+    step4: string;
+  };
+}
 
 export default function ChatbotPage() {
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'agent'; content: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ role: 'user' | 'agent'; content: string; paymentRequest?: PaymentRequest }>>([]);
   const [loading, setLoading] = useState(false);
+  const [processingPayment, setProcessingPayment] = useState<string | null>(null);
+  
+  const { address, isConnected } = useAccount();
+  const { data: walletClient } = useWalletClient();
 
   const examplePrompts = [
     { icon: '📅', title: 'Plan your week with a smart daily schedule' },
@@ -25,12 +52,115 @@ export default function ChatbotPage() {
 
     try {
       const agentResponse = await sendMessageToAgent(userMessage);
-      setMessages((prev) => [...prev, { role: 'agent', content: agentResponse }]);
+      
+      // Check if response is a payment request
+      if (typeof agentResponse === 'object' && agentResponse.paymentRequired) {
+        const paymentRequest = agentResponse as unknown as PaymentRequest;
+        setMessages((prev) => [...prev, { 
+          role: 'agent', 
+          content: paymentRequest.message,
+          paymentRequest: paymentRequest
+        }]);
+      } else {
+        setMessages((prev) => [...prev, { role: 'agent', content: agentResponse as string }]);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to get response';
       setMessages((prev) => [...prev, { role: 'agent', content: errorMessage }]);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handlePayNow(paymentReq: PaymentRequest) {
+    if (!isConnected || !address || !walletClient) {
+      setMessages((prev) => [...prev, { 
+        role: 'agent', 
+        content: '⚠️ Please connect your wallet using the button in the header to proceed with payment.' 
+      }]);
+      return;
+    }
+
+    setProcessingPayment(paymentReq.payment.id);
+    
+    try {
+      setMessages((prev) => [...prev, { 
+        role: 'agent', 
+        content: `💳 Initiating payment of ${paymentReq.payment.price}...\nPlease confirm the transaction in your wallet.` 
+      }]);
+
+      // Parse the price (remove $ and convert to ETH/MATIC)
+      const priceStr = paymentReq.payment.price.replace('$', '');
+      const priceValue = parseFloat(priceStr);
+      
+      // For demo: assume 1 MATIC = $1 USD (adjust in production)
+      const amountInEther = priceValue.toString();
+
+      // Send transaction (checksum the address first)
+      const txHash = await walletClient.sendTransaction({
+        account: address,
+        to: getAddress(paymentReq.payment.recipientAddress),
+        value: parseEther(amountInEther),
+        chain: walletClient.chain,
+      });
+
+      console.log('✅ Payment transaction sent:', txHash);
+
+      setMessages((prev) => [...prev, { 
+        role: 'agent', 
+        content: `✅ Payment successful!\n\nTransaction Hash: ${txHash}\n\nRetrying content retrieval...` 
+      }]);
+
+      // Send payment completion to backend
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/payment/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          paymentId: paymentReq.payment.id,
+          txHash: txHash,
+          url: paymentReq.url
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Retry the original scrape request
+        const originalMessage = messages.find(m => m.paymentRequest?.payment.id === paymentReq.payment.id);
+        if (originalMessage) {
+          // Find the user message that triggered this
+          const userMessageIndex = messages.findIndex(m => m === originalMessage) - 1;
+          const userMsg = messages[userMessageIndex];
+          if (userMsg && userMsg.role === 'user') {
+            // Resend the message
+            setLoading(true);
+            try {
+              const agentResponse = await sendMessageToAgent(userMsg.content);
+              if (typeof agentResponse === 'string') {
+                setMessages((prev) => [...prev, { role: 'agent', content: agentResponse }]);
+              }
+            } catch (error) {
+              setMessages((prev) => [...prev, { 
+                role: 'agent', 
+                content: '❌ Failed to retrieve content after payment. Please try again.' 
+              }]);
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      }
+
+    } catch (err: any) {
+      console.error('❌ Payment failed:', err);
+      setMessages((prev) => [...prev, { 
+        role: 'agent', 
+        content: `❌ Payment failed: ${err.message || 'Unknown error'}\n\nPlease try again or contact support.` 
+      }]);
+    } finally {
+      setProcessingPayment(null);
     }
   }
 
@@ -154,14 +284,62 @@ export default function ChatbotPage() {
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                       msg.role === 'user'
                         ? 'bg-black text-white dark:bg-white dark:text-black'
                         : 'bg-gray-100 text-black dark:bg-gray-800 dark:text-white'
                     }`}
-                  >
-                    <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
-                  </div>
+                >
+                  <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
+                  
+                  {/* Inline Payment Request */}
+                  {msg.paymentRequest && (
+                    <div className="mt-3 space-y-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/20">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-blue-800 dark:text-blue-300">
+                        💳 Payment Required
+                      </div>
+                      
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Amount:</span>
+                          <span className="font-bold text-gray-900 dark:text-white">{msg.paymentRequest.payment.price}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Network:</span>
+                          <span className="text-gray-900 dark:text-white">{msg.paymentRequest.payment.network}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Description:</span>
+                          <span className="text-gray-900 dark:text-white">{msg.paymentRequest.payment.description}</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handlePayNow(msg.paymentRequest!)}
+                        disabled={processingPayment === msg.paymentRequest.payment.id}
+                        className="w-full rounded-lg bg-blue-600 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {processingPayment === msg.paymentRequest.payment.id ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Processing Payment...
+                          </span>
+                        ) : (
+                          `Pay ${msg.paymentRequest.payment.price} Now`
+                        )}
+                      </button>
+
+                      {!isConnected && (
+                        <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                          ⚠️ Connect your wallet in the header first
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
                 </div>
               ))}
               {loading && (

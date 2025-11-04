@@ -11,10 +11,10 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 /**
  * Send a message to the AI agent
  * @param message - The user's message to send to the agent
- * @returns The agent's response
+ * @returns The agent's response (string or payment request object)
  * @throws Error if the request fails
  */
-export async function sendMessageToAgent(message: string): Promise<string> {
+export async function sendMessageToAgent(message: string): Promise<string | any> {
   try {
     const requestBody: AgentRequest = { message };
     
@@ -37,6 +37,10 @@ export async function sendMessageToAgent(message: string): Promise<string> {
     const data: AgentResponse | AgentError = await response.json();
 
     if (data.success && 'agentResponse' in data) {
+      // Check if agentResponse is a payment request object
+      if (typeof data.agentResponse === 'object' && data.agentResponse !== null) {
+        return data.agentResponse;
+      }
       return data.agentResponse;
     } else if ('error' in data) {
       throw new Error(data.error);
