@@ -62,11 +62,14 @@ export function RegistrationForm() {
     }
   }
 
-  // Redirect to dashboard on success
-  if (isSuccess) {
-    setTimeout(() => {
-      router.push('/contract')
-    }, 2000)
+  // Reset form to register another website
+  const handleRegisterAnother = () => {
+    setFormData({
+      websiteUrl: "",
+      siteName: "",
+      pricePerAccess: "",
+    })
+    setError(null)
   }
 
   return (
@@ -98,9 +101,22 @@ export function RegistrationForm() {
         <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-green-800 font-semibold">✅ Website registered successfully!</p>
           {txHash && (
-            <p className="text-xs text-gray-600 mt-1 font-mono">TX: {txHash}</p>
+            <p className="text-xs text-gray-600 mt-1 font-mono break-all">TX: {txHash}</p>
           )}
-          <p className="text-sm text-green-700 mt-2">Redirecting to dashboard...</p>
+          <div className="mt-3 flex gap-2">
+            <button
+              onClick={handleRegisterAnother}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium transition-colors"
+            >
+              Register Another Website
+            </button>
+            <a
+              href="/contract"
+              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md text-sm font-medium transition-colors"
+            >
+              View Dashboard
+            </a>
+          </div>
         </div>
       )}
 
