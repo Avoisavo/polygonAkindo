@@ -112,7 +112,16 @@ export default function ChatbotPage() {
       }]);
 
       // Send payment completion to backend
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/payment/complete`, {
+      console.log('📤 Sending payment completion to backend:', {
+        paymentId: paymentReq.payment.id,
+        txHash: txHash,
+        url: paymentReq.url
+      });
+      
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+      console.log('🔗 API URL:', apiUrl);
+      
+      const response = await fetch(`${apiUrl}/payment/complete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -124,33 +133,26 @@ export default function ChatbotPage() {
         }),
       });
 
+      console.log('📥 Response status:', response.status, response.statusText);
       const result = await response.json();
+      console.log('📥 Result:', result);
 
-      if (result.success) {
-        // Retry the original scrape request
-        const originalMessage = messages.find(m => m.paymentRequest?.payment.id === paymentReq.payment.id);
-        if (originalMessage) {
-          // Find the user message that triggered this
-          const userMessageIndex = messages.findIndex(m => m === originalMessage) - 1;
-          const userMsg = messages[userMessageIndex];
-          if (userMsg && userMsg.role === 'user') {
-            // Resend the message
-            setLoading(true);
-            try {
-              const agentResponse = await sendMessageToAgent(userMsg.content);
-              if (typeof agentResponse === 'string') {
-                setMessages((prev) => [...prev, { role: 'agent', content: agentResponse }]);
-              }
-            } catch (error) {
-              setMessages((prev) => [...prev, { 
-                role: 'agent', 
-                content: '❌ Failed to retrieve content after payment. Please try again.' 
-              }]);
-            } finally {
-              setLoading(false);
-            }
-          }
-        }
+      if (result.success && result.contentRetrieved && result.content) {
+        // Display the retrieved content
+        const contentMessage = `✅ Content Retrieved Successfully!\n\n` +
+          `📄 Title: ${result.content.title}\n\n` +
+          `📝 Content Preview:\n${result.content.preview}\n\n` +
+          `🔗 Source: ${result.content.url}`;
+        
+        setMessages((prev) => [...prev, { 
+          role: 'agent', 
+          content: contentMessage
+        }]);
+      } else if (result.success) {
+        setMessages((prev) => [...prev, { 
+          role: 'agent', 
+          content: `✅ Payment confirmed! Transaction: ${txHash}\n\n⚠️ However, content retrieval encountered an issue. The payment was successful.` 
+        }]);
       }
 
     } catch (err: any) {

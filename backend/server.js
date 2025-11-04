@@ -88,15 +88,26 @@ app.post('/payment/complete', async (req, res) => {
     
     // Retry fetching the content with payment proof
     try {
-      const response = await retryWithPayment(url, txHash);
+      const scrapedContent = await retryWithPayment(url, txHash);
       
-      res.json({
-        success: true,
-        message: 'Payment verified, content retrieved',
-        paymentId: paymentId,
-        txHash: txHash,
-        contentRetrieved: true
-      });
+      if (scrapedContent.success) {
+        console.log('✅ Content retrieved successfully after payment');
+        
+        res.json({
+          success: true,
+          message: 'Payment verified, content retrieved',
+          paymentId: paymentId,
+          txHash: txHash,
+          contentRetrieved: true,
+          content: {
+            title: scrapedContent.title,
+            preview: scrapedContent.content,
+            url: scrapedContent.url
+          }
+        });
+      } else {
+        throw new Error('Failed to retrieve content');
+      }
     } catch (error) {
       console.error('Failed to retrieve content after payment:', error.message);
       res.json({
