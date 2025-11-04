@@ -6,8 +6,11 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node start.js",
+    "start:agent": "node server.js",
+    "start:proxy": "node proxy-server.js",
     "dev": "nodemon server.js",
+    "dev:proxy": "nodemon proxy-server.js",
     "test": "node test_agent.js"
   },
   "keywords": [
