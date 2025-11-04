@@ -7,6 +7,55 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// Security: Only allow requests from the proxy server
+const PROXY_SECRET = process.env.PROXY_SECRET || 'dev-secret-key-change-in-production';
+
+app.use((req, res, next) => {
+  const proxyAuth = req.get('X-Proxy-Auth');
+  
+  // ONLY allow requests with the correct proxy authentication header
+  // Even localhost requests must have the secret key
+  if (proxyAuth === PROXY_SECRET) {
+    next();
+  } else {
+    res.status(403).send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Access Denied</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 100px auto;
+            padding: 20px;
+            text-align: center;
+            background: #f5f5f5;
+          }
+          .error-box {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-top: 4px solid #e74c3c;
+          }
+          h1 { color: #e74c3c; }
+          .icon { font-size: 64px; margin-bottom: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="error-box">
+          <div class="icon">🔒</div>
+          <h1>Access Denied</h1>
+          <p>This content server is protected and can only be accessed through the authorized proxy.</p>
+          <p>Please use: <strong>http://localhost:4022</strong></p>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+});
+
 // Serve blog site on /blog
 app.use('/blog', express.static(path.join(__dirname, 'blog-site')));
 
@@ -89,10 +138,12 @@ app.get('/', (req, res) => {
 });
 
 const PORT = 3002;
-app.listen(PORT, () => {
-  console.log(`\n🌐 Demo websites running:`);
-  console.log(`   Main page:  http://localhost:${PORT}`);
-  console.log(`   Blog site:  http://localhost:${PORT}/blog`);
-  console.log(`   News site:  http://localhost:${PORT}/news\n`);
+const HOST = '127.0.0.1'; // Only bind to localhost, not accessible from outside
+
+app.listen(PORT, HOST, () => {
+  console.log(`\n🔒 Protected Demo websites running on ${HOST}:${PORT}`);
+  console.log(`   ⚠️  Direct access is BLOCKED - must use proxy`);
+  console.log(`   ✅ Access via proxy: http://localhost:4022/blog`);
+  console.log(`   ✅ Access via proxy: http://localhost:4022/news\n`);
 });
 

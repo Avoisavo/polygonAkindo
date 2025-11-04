@@ -4,15 +4,25 @@ const router = express.Router();
 
 // Configuration
 const DEMO_SITE_URL = process.env.DEMO_SITE_URL || 'http://localhost:3002';
+const PROXY_SECRET = process.env.PROXY_SECRET || 'dev-secret-key-change-in-production';
 
 /**
- * Generic proxy handler - simply forwards requests to demo sites
+ * Generic proxy handler - forwards requests to demo sites with authentication
  */
 function createProxyHandler() {
   return async (req, res) => {
     try {
       const targetUrl = `${DEMO_SITE_URL}${req.path}`;
-      const response = await fetch(targetUrl);
+      
+      // Send authentication header to prove we're the authorized proxy
+      const response = await fetch(targetUrl, {
+        headers: {
+          'X-Proxy-Auth': PROXY_SECRET,
+          'X-Forwarded-For': req.ip,
+          'X-Original-User-Agent': req.get('User-Agent') || ''
+        }
+      });
+      
       const html = await response.text();
       
       res.send(html);
