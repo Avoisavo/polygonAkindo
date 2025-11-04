@@ -46,13 +46,22 @@ app.post('/agent', async (req, res) => {
     
     console.log('📤 Sending response back');
     
-    // Send response back
-    res.json({
+    // agentResponse is now { message, paymentInfo }
+    const response = {
       success: true,
       userMessage: message,
-      agentResponse: agentResponse,
+      agentResponse: agentResponse.message || agentResponse, // Backward compatible
       timestamp: new Date().toISOString()
-    });
+    };
+    
+    // Add payment info if present
+    if (agentResponse.paymentInfo) {
+      response.paymentMade = true;
+      response.payment = agentResponse.paymentInfo;
+      console.log('💰 Payment was made:', agentResponse.paymentInfo);
+    }
+    
+    res.json(response);
 
   } catch (error) {
     console.error('❌ Server error:', error.message);

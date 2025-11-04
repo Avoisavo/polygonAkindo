@@ -40,7 +40,15 @@ async function scrapeWebsite(url, userId = null) {
     // Initialize agent wallet if not already done
     const agentFetch = initializeAgentWallet();
     
-    console.log('🤖 Using agent wallet to fetch (will auto-pay if 402)');
+    console.log('🤖 Agent wallet:', agentAccount.address);
+    console.log('🔄 Making request with GPTBot user-agent...');
+    
+    // Track payment status
+    let paymentRequired = false;
+    let paymentMade = false;
+    let paymentAmount = 0n;
+    let paymentTx = null;
+    let paymentPrice = null;
     
     // Fetch with automatic payment handling
     // x402-fetch will:
@@ -59,41 +67,66 @@ async function scrapeWebsite(url, userId = null) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     
-    // Check if payment was made
-    let paymentMade = false;
-    let paymentAmount = 0n;
-    let paymentTx = null;
+    console.log('✅ Response received with status:', response.status);
     
+    // Check if payment was made by looking at x-payment-response header
     const xPaymentResponse = response.headers.get("x-payment-response");
+    
     if (xPaymentResponse) {
+      console.log('\n💳 ===== PAYMENT DETECTED =====');
+      console.log('📋 x-payment-response header found');
+      
       try {
         const paymentData = decodeXPaymentResponse(xPaymentResponse);
         
+        console.log('📦 Payment Data:', JSON.stringify({
+          success: paymentData.success,
+          transaction: paymentData.transaction,
+          network: paymentData.network,
+          payer: paymentData.payer
+        }, null, 2));
+        
         if (paymentData && paymentData.success) {
-          paymentMade = true;
+          paymentRequired = true; // 402 was received
+          paymentMade = true;     // Agent paid successfully
           paymentTx = paymentData.transaction;
+          
+          // Try to get price from original 402 headers or use default
+          // x402-fetch includes the original price in the payment response
+          paymentPrice = response.headers.get('x-payment-price') || '$0.005';
           
           // Parse amount from payment data (assuming it's in the response)
           // For demo, using fixed amount - in production, parse from headers
           paymentAmount = parseEther("0.005"); // $0.005 in MATIC
           
-          console.log('💰 Payment made:', paymentTx);
+          console.log('✅ PAYMENT SUCCESSFUL!');
+          console.log('   Transaction Hash:', paymentTx);
           console.log('   Amount:', paymentAmount.toString(), 'wei');
+          console.log('   Price:', paymentPrice);
+          console.log('   Network:', paymentData.network);
+          console.log('   Payer (Agent):', paymentData.payer);
+          console.log('===============================\n');
           
           // Deduct from user's balance if userId provided
           if (userId) {
+            console.log('💸 Deducting from user balance...');
             const success = deductFunds(userId, paymentAmount, `Scraping ${url}`, paymentTx);
             
-            if (!success) {
+            if (success) {
+              console.log('✅ Deducted from user:', userId.substring(0, 10) + '...');
+            } else {
               console.warn('⚠️  Could not deduct from user balance (insufficient funds)');
-              // Note: Payment already made by agent, so we continue
-              // In production, you might want to check balance BEFORE making the request
+              console.warn('   Payment was made by agent but user will not be charged');
             }
+          } else {
+            console.log('⚠️  No userId provided - payment made by agent but not charged to user');
           }
         }
       } catch (decodeError) {
         console.warn('⚠️  Could not decode payment response:', decodeError.message);
       }
+    } else {
+      console.log('ℹ️  No payment required - content was free or already accessible');
     }
 
     // Get HTML content from response
@@ -167,15 +200,28 @@ async function scrapeWebsite(url, userId = null) {
       content: mainContent,
       contentLength: mainContent.length,
       scrapedAt: new Date().toISOString(),
+      // Payment information
+      paymentRequired: paymentRequired,
       paymentMade: paymentMade,
       paymentAmount: paymentMade ? paymentAmount.toString() : null,
-      paymentTx: paymentTx
+      paymentPrice: paymentPrice,
+      paymentTx: paymentTx,
+      agentWallet: agentAccount.address
     };
 
+    console.log('\n📊 ===== SCRAPING SUMMARY =====');
     console.log('✅ Successfully scraped:', title);
+    console.log('📏 Content length:', mainContent.length, 'characters');
     if (paymentMade) {
-      console.log('💰 Cost:', paymentAmount.toString(), 'wei');
+      console.log('💰 Payment Required: YES (402 received)');
+      console.log('💳 Payment Made: YES');
+      console.log('💵 Cost:', paymentPrice, '(' + paymentAmount.toString(), 'wei)');
+      console.log('🔗 Transaction:', paymentTx);
+    } else {
+      console.log('💰 Payment Required: NO (free access)');
     }
+    console.log('===============================\n');
+    
     return result;
 
   } catch (error) {

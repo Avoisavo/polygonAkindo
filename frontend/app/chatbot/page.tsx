@@ -26,9 +26,16 @@ interface PaymentRequest {
   };
 }
 
+interface PaymentInfo {
+  paid: boolean;
+  amount: string;
+  txHash: string;
+  agentWallet: string;
+}
+
 export default function ChatbotPage() {
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'agent'; content: string; paymentRequest?: PaymentRequest }>>([]);
+  const [messages, setMessages] = useState<Array<{ role: 'user' | 'agent'; content: string; paymentRequest?: PaymentRequest; paymentInfo?: PaymentInfo }>>([]);
   const [loading, setLoading] = useState(false);
   const [processingPayment, setProcessingPayment] = useState<string | null>(null);
   
@@ -53,13 +60,12 @@ export default function ChatbotPage() {
     try {
       const agentResponse = await sendMessageToAgent(userMessage);
       
-      // Check if response is a payment request
-      if (typeof agentResponse === 'object' && agentResponse.paymentRequired) {
-        const paymentRequest = agentResponse as unknown as PaymentRequest;
+      // Check if response contains payment info from agent auto-pay
+      if (typeof agentResponse === 'object' && agentResponse.paymentMade) {
         setMessages((prev) => [...prev, { 
           role: 'agent', 
-          content: paymentRequest.message,
-          paymentRequest: paymentRequest
+          content: agentResponse.agentResponse as string,
+          paymentInfo: agentResponse.payment as PaymentInfo
         }]);
       } else {
         setMessages((prev) => [...prev, { role: 'agent', content: agentResponse as string }]);
@@ -293,6 +299,46 @@ export default function ChatbotPage() {
                     }`}
                 >
                   <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
+                  
+                  {/* Payment Info - Agent Auto-Paid */}
+                  {msg.paymentInfo && (
+                    <div className="mt-3 space-y-2 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-900/20">
+                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-green-800 dark:text-green-300">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Payment Made by Agent
+                      </div>
+                      
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Amount:</span>
+                          <span className="font-mono font-bold text-green-700 dark:text-green-300">{msg.paymentInfo.amount}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Agent Wallet:</span>
+                          <span className="font-mono text-xs text-gray-700 dark:text-gray-300">
+                            {msg.paymentInfo.agentWallet.substring(0, 6)}...{msg.paymentInfo.agentWallet.substring(38)}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-gray-600 dark:text-gray-400">Transaction:</span>
+                          <a 
+                            href={`https://amoy.polygonscan.com/tx/${msg.paymentInfo.txHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-mono text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 break-all"
+                          >
+                            {msg.paymentInfo.txHash}
+                          </a>
+                        </div>
+                      </div>
+                      
+                      <div className="pt-2 text-xs italic text-gray-600 dark:text-gray-400">
+                        ✅ Payment verified by facilitator
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Inline Payment Request */}
                   {msg.paymentRequest && (
