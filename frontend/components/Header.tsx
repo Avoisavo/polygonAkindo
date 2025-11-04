@@ -11,7 +11,7 @@ export function Header() {
           {/* Logo / Brand */}
           <div className="flex items-center">
             <Link href="/" className="text-xl font-bold text-gray-900">
-              PolygonAkindo
+              PolyGate
             </Link>
           </div>
 
