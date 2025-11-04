@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { processMessage } from './agent.js';
+import { getPendingPayment, markPaymentCompleted, retryWithPayment } from './clients/payment-handler.js';
 
 // Load environment variables
 dotenv.config();
@@ -59,6 +60,79 @@ app.post('/agent', async (req, res) => {
       details: error.message
     });
   }
+});
+
+// Payment completion endpoint
+app.post('/payment/complete', async (req, res) => {
+  try {
+    const { paymentId, txHash, url } = req.body;
+    
+    if (!paymentId || !txHash || !url) {
+      return res.status(400).json({
+        error: 'Missing required fields: paymentId, txHash, url'
+      });
+    }
+    
+    // Verify payment exists
+    const payment = getPendingPayment(paymentId);
+    if (!payment) {
+      return res.status(404).json({
+        error: 'Payment not found or expired'
+      });
+    }
+    
+    console.log('💰 Processing payment completion:', { paymentId, txHash });
+    
+    // Mark payment as completed
+    markPaymentCompleted(paymentId, txHash);
+    
+    // Retry fetching the content with payment proof
+    try {
+      const response = await retryWithPayment(url, txHash);
+      
+      res.json({
+        success: true,
+        message: 'Payment verified, content retrieved',
+        paymentId: paymentId,
+        txHash: txHash,
+        contentRetrieved: true
+      });
+    } catch (error) {
+      console.error('Failed to retrieve content after payment:', error.message);
+      res.json({
+        success: true,
+        message: 'Payment recorded, but content retrieval failed',
+        paymentId: paymentId,
+        txHash: txHash,
+        contentRetrieved: false,
+        error: error.message
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Payment completion error:', error.message);
+    res.status(500).json({
+      error: 'Failed to process payment',
+      details: error.message
+    });
+  }
+});
+
+// Get payment status endpoint
+app.get('/payment/:paymentId', (req, res) => {
+  const { paymentId } = req.params;
+  const payment = getPendingPayment(paymentId);
+  
+  if (!payment) {
+    return res.status(404).json({
+      error: 'Payment not found'
+    });
+  }
+  
+  res.json({
+    success: true,
+    payment: payment
+  });
 });
 
 // Health check endpoint
