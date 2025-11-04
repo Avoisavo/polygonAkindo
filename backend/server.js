@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { processMessage } from './agent.js';
 import { getPendingPayment, markPaymentCompleted, retryWithPayment } from './clients/payment-handler.js';
+import { getUserBalance, addFunds, getTransactionHistory } from './services/userBalance.js';
+import { parseEther } from 'viem';
 
 // Load environment variables
 dotenv.config();
@@ -152,6 +154,101 @@ app.get('/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString()
   });
+});
+
+// Get agent wallet address (so users know where to send funds)
+app.get('/agent/wallet', (req, res) => {
+  const agentAddress = process.env.AGENT_WALLET_ADDRESS;
+  
+  if (!agentAddress) {
+    return res.status(500).json({
+      error: 'Agent wallet not configured'
+    });
+  }
+  
+  res.json({
+    address: agentAddress,
+    network: 'polygon-amoy',
+    message: 'Send funds to this address to top up your agent balance'
+  });
+});
+
+// Record user deposit to agent wallet
+app.post('/agent/deposit', (req, res) => {
+  try {
+    const { userId, amount, txHash } = req.body;
+    
+    if (!userId || !amount || !txHash) {
+      return res.status(400).json({
+        error: 'Missing required fields: userId, amount, txHash'
+      });
+    }
+    
+    // Convert amount to wei (assuming amount is in MATIC/ETH)
+    const amountWei = parseEther(amount);
+    
+    // Add to user's balance
+    const newBalance = addFunds(userId, amountWei, txHash);
+    
+    res.json({
+      success: true,
+      userId: userId,
+      depositAmount: amount,
+      newBalance: newBalance.toString(),
+      txHash: txHash
+    });
+    
+  } catch (error) {
+    console.error('❌ Deposit error:', error.message);
+    res.status(500).json({
+      error: 'Failed to process deposit',
+      details: error.message
+    });
+  }
+});
+
+// Get user's balance
+app.get('/agent/balance/:userId', (req, res) => {
+  try {
+    const { userId } = req.params;
+    const balance = getUserBalance(userId);
+    
+    res.json({
+      userId: userId,
+      balance: balance.toString(),
+      balanceFormatted: `${balance / BigInt(10**18)} MATIC`
+    });
+    
+  } catch (error) {
+    console.error('❌ Balance check error:', error.message);
+    res.status(500).json({
+      error: 'Failed to get balance',
+      details: error.message
+    });
+  }
+});
+
+// Get user's transaction history
+app.get('/agent/history/:userId', (req, res) => {
+  try {
+    const { userId } = req.params;
+    const limit = parseInt(req.query.limit) || 50;
+    
+    const history = getTransactionHistory(userId, limit);
+    
+    res.json({
+      userId: userId,
+      transactions: history,
+      count: history.length
+    });
+    
+  } catch (error) {
+    console.error('❌ History error:', error.message);
+    res.status(500).json({
+      error: 'Failed to get transaction history',
+      details: error.message
+    });
+  }
 });
 
 // Start server
