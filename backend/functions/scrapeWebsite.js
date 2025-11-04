@@ -1,5 +1,6 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { isPaymentRequired, handlePaymentRequired } from '../clients/payment-handler.js';
 
 /**
  * Scrape website content from a given URL
@@ -10,13 +11,34 @@ async function scrapeWebsite(url) {
   try {
     console.log('🌐 Scraping website:', url);
     
-    // Fetch the HTML from the website
+    // Fetch the HTML from the website with AI crawler User-Agent
     const response = await axios.get(url, {
       timeout: 10000,
       headers: {
         'User-Agent': 'GPTBot/1.0 (+https://openai.com/gptbot)'
+      },
+      validateStatus: function (status) {
+        // Accept both success and 402 Payment Required
+        return status < 500;
       }
     });
+
+    // Check if payment is required (HTTP 402)
+    if (isPaymentRequired(response)) {
+      const paymentRequest = handlePaymentRequired(url, response);
+      
+      return {
+        success: false,
+        paymentRequired: true,
+        url: url,
+        ...paymentRequest
+      };
+    }
+
+    // Check for other errors
+    if (response.status >= 400) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
 
     // Load HTML into cheerio for parsing
     const $ = cheerio.load(response.data);
