@@ -1,6 +1,11 @@
 import { paymentMiddleware } from "x402-express";
 
 /**
+ * Default payment recipient address
+ */
+export const PAYMENT_RECIPIENT_ADDRESS = "0xa6f7df49e2d4b48bc1eea0886fb8798fb51046d7";
+
+/**
  * Payment configuration for different routes
  */
 export const PAYMENT_ROUTES = {

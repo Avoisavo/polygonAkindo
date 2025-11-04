@@ -1,13 +1,13 @@
 import "dotenv/config";
 import express from "express";
 import { detectAICrawler } from "./utils/crawlerDetector.js";
-import { conditionalPaymentEnforcement } from "./config/paymentConfig.js";
+import { conditionalPaymentEnforcement, PAYMENT_RECIPIENT_ADDRESS } from "./config/paymentConfig.js";
 import proxyRoutes from "./routes/proxyRoutes.js";
 
 const app = express();
 
 // Configuration from environment
-const PAYMENT_ADDRESS = process.env.PAYMENT_ADDRESS;
+const PAYMENT_ADDRESS = process.env.PAYMENT_ADDRESS || PAYMENT_RECIPIENT_ADDRESS;
 const FACILITATOR_URL = process.env.FACILITATOR_URL;
 const PORT = process.env.PROXY_PORT || 4022;
 
