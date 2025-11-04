@@ -1,5 +1,5 @@
-const OpenAI = require('openai');
-const { functionDefinitions, executeFunction } = require('./functions');
+import OpenAI from 'openai';
+import { functionDefinitions, executeFunction } from './functions/index.js';
 
 // OpenAI client will be initialized when needed
 let openai = null;
@@ -57,6 +57,13 @@ async function processMessage(userMessage) {
       
       const functionResult = await executeFunction(functionName, functionArgs);
       
+      // Log if payment was made
+      if (functionResult.paymentMade) {
+        console.log('💰 Payment was made during function execution');
+        console.log('   Price:', functionResult.paymentPrice);
+        console.log('   TX:', functionResult.paymentTx);
+      }
+      
       // Add function call and result to conversation
       messages.push(responseMessage);
       messages.push({
@@ -66,6 +73,14 @@ async function processMessage(userMessage) {
       });
       
       // Get final response from AI after function execution
+      // Include payment info in the system message if payment was made
+      if (functionResult.paymentMade) {
+        messages.push({
+          role: "system",
+          content: `Note: A payment of ${functionResult.paymentPrice} was automatically made for this request. Transaction: ${functionResult.paymentTx}. Make sure to mention this to the user.`
+        });
+      }
+      
       const finalCompletion = await openaiClient.chat.completions.create({
         model: "gpt-4o-mini",
         messages: messages,
@@ -76,13 +91,25 @@ async function processMessage(userMessage) {
       const finalResponse = finalCompletion.choices[0].message.content;
       console.log('🧠 Agent response with function result generated');
       
-      return finalResponse;
+      // Return response with payment metadata
+      return {
+        message: finalResponse,
+        paymentInfo: functionResult.paymentMade ? {
+          paid: true,
+          amount: functionResult.paymentPrice,
+          txHash: functionResult.paymentTx,
+          agentWallet: functionResult.agentWallet
+        } : null
+      };
     } else {
       // No function call needed, return direct response
       const response = responseMessage.content;
       console.log('🧠 Agent response generated');
       
-      return response;
+      return {
+        message: response,
+        paymentInfo: null
+      };
     }
   } catch (error) {
     console.error('❌ Error in agent processing:', error.message);
@@ -90,6 +117,6 @@ async function processMessage(userMessage) {
   }
 }
 
-module.exports = {
+export {
   processMessage
 };

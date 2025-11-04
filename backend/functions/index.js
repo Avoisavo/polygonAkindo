@@ -1,4 +1,4 @@
-const { scrapeWebsite } = require('./scrapeWebsite');
+import { scrapeWebsite } from './scrapeWebsite.js';
 
 // Available functions for the AI agent
 const functions = {
@@ -9,13 +9,17 @@ const functions = {
 const functionDefinitions = [
   {
     name: 'scrapeWebsite',
-    description: 'Scrape content from a website URL and return the main text content, title, and metadata',
+    description: 'Scrape content from a website URL and return the main text content, title, and metadata. Agent will automatically pay for paywalled content.',
     parameters: {
       type: 'object',
       properties: {
         url: {
           type: 'string',
           description: 'The website URL to scrape (must include http:// or https://)'
+        },
+        userId: {
+          type: 'string',
+          description: 'Optional: User ID (wallet address) to charge for the service'
         }
       },
       required: ['url']
@@ -32,13 +36,13 @@ async function executeFunction(functionName, args) {
   }
   
   console.log(`🔧 Executing function: ${functionName}`, args);
-  const result = await functions[functionName](args.url);
+  const result = await functions[functionName](args.url, args.userId);
   console.log(`✅ Function ${functionName} completed`);
   
   return result;
 }
 
-module.exports = {
+export {
   functions,
   functionDefinitions,
   executeFunction
