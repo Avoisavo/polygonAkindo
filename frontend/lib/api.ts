@@ -1,0 +1,61 @@
+/**
+ * API service layer for backend communication
+ * Handles all HTTP requests to the backend server
+ */
+
+import type { AgentRequest, AgentResponse, AgentError } from './types';
+
+// Base API URL - can be configured via environment variable
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+/**
+ * Send a message to the AI agent
+ * @param message - The user's message to send to the agent
+ * @returns The agent's response
+ * @throws Error if the request fails
+ */
+export async function sendMessageToAgent(message: string): Promise<string> {
+  try {
+    const requestBody: AgentRequest = { message };
+    
+    const response = await fetch(`${API_BASE_URL}/agent`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: AgentResponse | AgentError = await response.json();
+
+    if (data.success && 'agentResponse' in data) {
+      return data.agentResponse;
+    } else if ('error' in data) {
+      throw new Error(data.error);
+    } else {
+      throw new Error('Invalid response format from server');
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to send message: ${error.message}`);
+    }
+    throw new Error('Failed to send message: Unknown error');
+  }
+}
+
+/**
+ * Check backend server health
+ * @returns true if server is healthy, false otherwise
+ */
+export async function checkServerHealth(): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/health`);
+    return response.ok;
+  } catch (error) {
+    return false;
+  }
+}
