@@ -41,3 +41,7 @@ export const getNetworkInfo = () => {
 // Export the chain for use in providers
 export const chains = [polygonAmoy] as const;
 
+// Contract Addresses on Polygon Amoy
+export const X402POLY_CONTRACT = '0xe5E43468bcBd09391bF73d0D43a624537c46bBa9' as const;
+export const PAYMENT_TOKEN = '0x41E94EB019c0762f9cBFCFeE217e8e5252C3fE89' as const; // USDC on Amoy
+
