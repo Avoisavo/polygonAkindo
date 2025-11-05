@@ -22,19 +22,6 @@ export const PAYMENT_ROUTES = {
       }
     }
   },
-  "GET /news": {
-    price: "$0.003",  // 0.3 cents per news access
-    network: "polygon-amoy",
-    config: {
-      description: "Access to Global Tech News articles",
-      inputSchema: {
-        type: "object",
-        properties: {
-          userAgent: { type: "string" }
-        }
-      }
-    }
-  }
 };
 
 /**
