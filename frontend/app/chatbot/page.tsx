@@ -4,6 +4,10 @@ import { useState } from 'react';
 import { sendMessageToAgent } from '@/lib/api';
 import { useAccount, useWalletClient } from 'wagmi';
 import { parseEther, getAddress } from 'viem';
+import { Brain } from 'lucide-react';
+import Sidebar from '@/components/SideBar';
+import ChatArea from '@/components/ChatArea';
+import TextType from '@/components/TextType';
 
 interface PaymentRequest {
   type: string;
@@ -34,6 +38,7 @@ interface PaymentInfo {
 }
 
 export default function ChatbotPage() {
+  const [selectedModel, setSelectedModel] = useState('ChatGPT-4o');
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'agent'; content: string; paymentRequest?: PaymentRequest; paymentInfo?: PaymentInfo }>>([]);
   const [loading, setLoading] = useState(false);
@@ -228,118 +233,94 @@ export default function ChatbotPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white dark:bg-black">
-      <div className="w-full max-w-3xl px-6 py-8">
-        {messages.length === 0 ? (
-          <>
-            {/* Greeting Section */}
-            <div className="mb-12 flex flex-col items-center text-center">
-              <div className="mb-6 flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500">
-                <div className="flex h-28 w-28 items-center justify-center rounded-full bg-white dark:bg-black">
-                  <span className="text-5xl">🤖</span>
-                </div>
-              </div>
-              <h1 className="mb-2 text-3xl font-semibold text-black dark:text-white">
-                Good Afternoon, Alex
-              </h1>
-              <p className="text-xl text-gray-600 dark:text-gray-400">What's on your mind?</p>
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between dark:bg-gray-900 dark:border-gray-800">
+          <button className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 rounded-lg transition-colors dark:hover:bg-gray-800">
+            <div className="w-5 h-5 rounded flex items-center justify-center">
+              <img
+                src="/openai.png"
+                alt="OpenAI"
+                width={18}
+                height={18}
+                className="object-contain"
+              />
             </div>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">{selectedModel}</span>
+            <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
 
-            {/* Input Section */}
-            <div className="mb-8">
-              <div className="relative rounded-2xl border border-gray-200 bg-gray-50 p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                <div className="mb-3 flex items-center text-gray-400">
-                  <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                  </svg>
-                  <span className="text-sm">Ask AI a question or make a request...</span>
-                </div>
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder=""
-                  className="w-full resize-none bg-transparent text-black outline-none dark:text-white"
-                  rows={3}
-                />
-                <div className="mt-3 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <button
-                      type="button"
-                      className="flex items-center gap-2 text-sm text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white"
-                    >
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                      </svg>
-                      Attach
-                    </button>
-                    <button
-                      type="button"
-                      className="text-sm text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white"
-                    >
-                      Writing Styles
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700"
-                    >
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={sendMessage}
-                      disabled={!message.trim() || loading}
-                      className="flex h-10 w-10 items-center justify-center rounded-full bg-black text-white hover:bg-gray-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-gray-200"
-                    >
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center gap-3">
+            <button className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors dark:bg-white dark:text-black dark:hover:bg-gray-200">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              New Chat
+            </button>
+          </div>
+        </header>
 
-            {/* Example Prompts */}
-            <div>
-              <p className="mb-4 text-center text-sm uppercase tracking-wide text-gray-500">
-                Get started with an example below
-              </p>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {examplePrompts.map((prompt, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleExampleClick(prompt.title)}
-                    className="group flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 text-left transition-all hover:border-gray-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700"
-                  >
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 text-2xl dark:bg-gray-800">
-                      {prompt.icon}
+        {/* Main Chat Area */}
+        <main className="flex-1 overflow-y-auto px-6 py-12 flex flex-col">
+          {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center flex-1">
+            <div className="max-w-2xl w-full text-center space-y-6">
+              {/* Avatar with gradient blob */}
+              <div className="flex justify-center mb-8">
+                <div className="relative">
+                  <div className="w-32 h-32 bg-gradient-to-br from-gray-400 via-gray-600 to-black rounded-full blur-2xl opacity-60"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-24 h-24 bg-gradient-to-br from-gray-700 via-gray-800 to-black rounded-full flex items-center justify-center">
+                      <Brain className="w-12 h-12 text-white" />
                     </div>
-                    <p className="text-sm font-medium text-gray-700 group-hover:text-black dark:text-gray-300 dark:group-hover:text-white">
-                      {prompt.title}
-                    </p>
-                  </button>
-                ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Greeting */}
+              <div>
+                <h1 className="text-3xl font-semibold text-gray-900 mb-2">
+                  Good Morning, Judha
+                </h1>
+                <h2 className="text-3xl font-semibold text-gray-900">
+                  How Can I{' '}
+                  <TextType
+                    text={[
+                      "Assist You Today?",
+                      "Help You Today?", 
+                      "Support You Today?",
+                      "Serve You Today?"
+                    ]}
+                    as="span"
+                    className="bg-gradient-to-r from-gray-800 to-black bg-clip-text text-transparent"
+                    typingSpeed={80}
+                    deletingSpeed={50}
+                    pauseDuration={2000}
+                    loop={true}
+                    showCursor={true}
+                    cursorCharacter="|"
+                    cursorClassName="text-gray-800"
+                  />
+                </h2>
               </div>
             </div>
-          </>
+          </div>
         ) : (
-          <>
-            {/* Chat Messages */}
-            <div className="mb-6 space-y-4">
+            <div className="max-w-3xl w-full mx-auto space-y-4">
               {messages.map((msg, idx) => (
                 <div
                   key={idx}
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                       msg.role === 'user'
-                        ? 'bg-black text-white dark:bg-white dark:text-black'
-                        : 'bg-gray-100 text-black dark:bg-gray-800 dark:text-white'
+                        ? 'bg-gradient-to-r from-gray-800 to-black text-white dark:from-gray-700 dark:to-gray-900'
+                        : 'bg-white border border-gray-200 text-gray-900 dark:bg-gray-800 dark:border-gray-700 dark:text-white'
                     }`}
                 >
                   <p className="whitespace-pre-wrap text-sm">{renderMessageWithTxLinks(msg.content)}</p>
@@ -406,73 +387,110 @@ export default function ChatbotPage() {
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => handlePayNow(msg.paymentRequest!)}
-                        disabled={processingPayment === msg.paymentRequest.payment.id}
-                        className="w-full rounded-lg bg-blue-600 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {processingPayment === msg.paymentRequest.payment.id ? (
-                          <span className="flex items-center justify-center gap-2">
-                            <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Processing Payment...
-                          </span>
-                        ) : (
-                          `Pay ${msg.paymentRequest.payment.price} Now`
-                        )}
-                      </button>
+                        <button
+                          onClick={() => handlePayNow(msg.paymentRequest!)}
+                          disabled={processingPayment === msg.paymentRequest.payment.id}
+                          className="w-full rounded-lg bg-blue-600 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {processingPayment === msg.paymentRequest.payment.id ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Processing Payment...
+                            </span>
+                          ) : (
+                            `Pay ${msg.paymentRequest.payment.price} Now`
+                          )}
+                        </button>
 
-                      {!isConnected && (
-                        <p className="text-xs text-yellow-700 dark:text-yellow-400">
-                          ⚠️ Connect your wallet in the header first
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
+                        {!isConnected && (
+                          <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                            ⚠️ Connect your wallet in the header first
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
               {loading && (
                 <div className="flex justify-start">
-                  <div className="max-w-[80%] rounded-2xl bg-gray-100 px-4 py-3 dark:bg-gray-800">
+                  <div className="max-w-[80%] rounded-2xl bg-white border border-gray-200 px-4 py-3 dark:bg-gray-800 dark:border-gray-700">
                     <div className="flex gap-1">
-                      <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: '0ms' }}></span>
-                      <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: '150ms' }}></span>
-                      <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: '300ms' }}></span>
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-gray-800 dark:bg-gray-400" style={{ animationDelay: '0ms' }}></span>
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-gray-800 dark:bg-gray-400" style={{ animationDelay: '150ms' }}></span>
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-gray-800 dark:bg-gray-400" style={{ animationDelay: '300ms' }}></span>
                     </div>
                   </div>
                 </div>
               )}
             </div>
+          )}
+        </main>
 
-            {/* Input Section (Sticky at bottom) */}
-            <div className="sticky bottom-4">
-              <div className="relative rounded-2xl border border-gray-200 bg-white p-4 shadow-lg dark:border-gray-800 dark:bg-gray-900">
-                <textarea
+        {/* Input Area - Using ChatArea.tsx design */}
+        <div className="px-6 pb-6">
+          <div className="max-w-3xl mx-auto">
+            {/* Input Box */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="flex items-center px-4 py-3 border-b border-gray-100">
+                <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Initiate a query or send a command to the AI..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Type your message..."
-                  className="w-full resize-none bg-transparent text-black outline-none dark:text-white"
-                  rows={2}
+                  disabled={loading}
+                  className="flex-1 px-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none disabled:opacity-50"
                 />
-                <div className="mt-2 flex items-center justify-end gap-2">
-                  <button
-                    onClick={sendMessage}
-                    disabled={!message.trim() || loading}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-black text-white hover:bg-gray-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-gray-200"
-                  >
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+              </div>
+
+              {/* Quick Actions */}
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <button className="p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                     </svg>
                   </button>
+                  <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Reasoning
+                  </button>
+                  <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Create Image
+                  </button>
+                  <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Deep Research
+                  </button>
                 </div>
+
+                <button
+                  onClick={sendMessage}
+                  disabled={!message.trim() || loading}
+                  className="p-2 bg-gradient-to-r from-gray-800 to-black rounded-lg hover:from-gray-700 hover:to-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                </button>
               </div>
             </div>
-          </>
-        )}
+          </div>
+        </div>
       </div>
     </div>
   );
