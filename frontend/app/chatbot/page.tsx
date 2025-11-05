@@ -42,6 +42,46 @@ export default function ChatbotPage() {
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
 
+  // Helper function to convert transaction hashes and URLs to clickable links
+  function renderMessageWithTxLinks(content: string) {
+    // Combined regex to match URLs and transaction hashes
+    const combinedRegex = /(https?:\/\/[^\s]+)|(0x[a-fA-F0-9]{64})/g;
+    
+    const parts = content.split(combinedRegex).filter(Boolean);
+    
+    return parts.map((part, index) => {
+      // Check if it's a URL
+      if (part && part.match(/^https?:\/\//)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 dark:hover:text-blue-300 break-all"
+          >
+            {part}
+          </a>
+        );
+      }
+      // Check if it's a transaction hash
+      if (part && part.match(/^0x[a-fA-F0-9]{64}$/)) {
+        return (
+          <a
+            key={index}
+            href={`https://amoy.polygonscan.com/tx/${part}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 dark:hover:text-blue-300 break-all"
+          >
+            {part}
+          </a>
+        );
+      }
+      return <span key={index}>{part}</span>;
+    });
+  }
+
   const examplePrompts = [
     { icon: '📅', title: 'Plan your week with a smart daily schedule' },
     { icon: '📝', title: "Ask AI to prioritize today's top tasks" },
@@ -82,7 +122,7 @@ export default function ChatbotPage() {
     if (!isConnected || !address || !walletClient) {
       setMessages((prev) => [...prev, { 
         role: 'agent', 
-        content: '⚠️ Please connect your wallet using the button in the header to proceed with payment.' 
+        content: '⚠️ Wallet Not Connected\n\n━━━━━━━━━━━━━━━━━━━━\n\n💡 To proceed with payment:\n• Click "Connect Wallet" in the header\n• Select your wallet provider\n• Approve the connection\n\n━━━━━━━━━━━━━━━━━━━━' 
       }]);
       return;
     }
@@ -92,7 +132,7 @@ export default function ChatbotPage() {
     try {
       setMessages((prev) => [...prev, { 
         role: 'agent', 
-        content: `💳 Initiating payment of ${paymentReq.payment.price}...\nPlease confirm the transaction in your wallet.` 
+        content: `💳 Payment Initiated\n\n━━━━━━━━━━━━━━━━━━━━\n\n💰 Amount: ${paymentReq.payment.price}\n\n⏳ Please confirm the transaction in your wallet...\n\n━━━━━━━━━━━━━━━━━━━━` 
       }]);
 
       // Parse the price (remove $ and convert to ETH/MATIC)
@@ -114,7 +154,7 @@ export default function ChatbotPage() {
 
       setMessages((prev) => [...prev, { 
         role: 'agent', 
-        content: `✅ Payment successful!\n\nTransaction Hash: ${txHash}\n\nRetrying content retrieval...` 
+        content: `✅ Payment Successful!\n\n━━━━━━━━━━━━━━━━━━━━\n\n📋 Transaction Details:\n${txHash}\n\n🔗 View on Explorer:\nhttps://amoy.polygonscan.com/tx/${txHash}\n\n━━━━━━━━━━━━━━━━━━━━\n\n⏳ Retrieving content...` 
       }]);
 
       // Send payment completion to backend
@@ -146,9 +186,13 @@ export default function ChatbotPage() {
       if (result.success && result.contentRetrieved && result.content) {
         // Display the retrieved content
         const contentMessage = `✅ Content Retrieved Successfully!\n\n` +
-          `📄 Title: ${result.content.title}\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `📄 Title:\n${result.content.title}\n\n` +
           `📝 Content Preview:\n${result.content.preview}\n\n` +
-          `🔗 Source: ${result.content.url}`;
+          `🔗 Source:\n${result.content.url}\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `💳 Payment Transaction:\n${txHash}\n\n` +
+          `🔍 View on Explorer:\nhttps://amoy.polygonscan.com/tx/${txHash}`;
         
         setMessages((prev) => [...prev, { 
           role: 'agent', 
@@ -157,7 +201,7 @@ export default function ChatbotPage() {
       } else if (result.success) {
         setMessages((prev) => [...prev, { 
           role: 'agent', 
-          content: `✅ Payment confirmed! Transaction: ${txHash}\n\n⚠️ However, content retrieval encountered an issue. The payment was successful.` 
+          content: `✅ Payment Confirmed!\n\n━━━━━━━━━━━━━━━━━━━━\n\n📋 Transaction Details:\n${txHash}\n\n🔗 View on Explorer:\nhttps://amoy.polygonscan.com/tx/${txHash}\n\n━━━━━━━━━━━━━━━━━━━━\n\n⚠️ Content Retrieval Issue\n\nYour payment was successful, but we encountered an issue retrieving the content. Please try again or contact support.` 
         }]);
       }
 
@@ -165,7 +209,7 @@ export default function ChatbotPage() {
       console.error('❌ Payment failed:', err);
       setMessages((prev) => [...prev, { 
         role: 'agent', 
-        content: `❌ Payment failed: ${err.message || 'Unknown error'}\n\nPlease try again or contact support.` 
+        content: `❌ Payment Failed\n\n━━━━━━━━━━━━━━━━━━━━\n\n⚠️ Error:\n${err.message || 'Unknown error occurred'}\n\n━━━━━━━━━━━━━━━━━━━━\n\n💡 What to do:\n• Check your wallet balance\n• Ensure you're on the correct network\n• Try again or contact support` 
       }]);
     } finally {
       setProcessingPayment(null);
@@ -298,7 +342,7 @@ export default function ChatbotPage() {
                         : 'bg-gray-100 text-black dark:bg-gray-800 dark:text-white'
                     }`}
                 >
-                  <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
+                  <p className="whitespace-pre-wrap text-sm">{renderMessageWithTxLinks(msg.content)}</p>
                   
                   {/* Payment Info - Agent Auto-Paid */}
                   {msg.paymentInfo && (
