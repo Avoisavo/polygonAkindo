@@ -34,9 +34,14 @@ export async function sendMessageToAgent(message: string): Promise<string | any>
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data: AgentResponse | AgentError = await response.json();
+    const data: AgentResponse | AgentError | any = await response.json();
 
     if (data.success && 'agentResponse' in data) {
+      // If payment info is present, return the full response object
+      // Otherwise return just the agentResponse string for backward compatibility
+      if (data.paymentMade && data.payment) {
+        return data;
+      }
       // Check if agentResponse is a payment request object
       if (typeof data.agentResponse === 'object' && data.agentResponse !== null) {
         return data.agentResponse;

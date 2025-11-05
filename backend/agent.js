@@ -75,9 +75,10 @@ async function processMessage(userMessage) {
       // Get final response from AI after function execution
       // Include payment info in the system message if payment was made
       if (functionResult.paymentMade) {
+        const explorerLink = `https://amoy.polygonscan.com/tx/${functionResult.paymentTx}`;
         messages.push({
           role: "system",
-          content: `Note: A payment of ${functionResult.paymentPrice} was automatically made for this request. Transaction: ${functionResult.paymentTx}. Make sure to mention this to the user.`
+          content: `Note: A payment of ${functionResult.paymentPrice} was automatically made for this request. Transaction hash: ${functionResult.paymentTx}. Explorer link: ${explorerLink}. Make sure to mention both the payment amount and provide the explorer link to the user so they can view the transaction.`
         });
       }
       
@@ -98,6 +99,7 @@ async function processMessage(userMessage) {
           paid: true,
           amount: functionResult.paymentPrice,
           txHash: functionResult.paymentTx,
+          explorerLink: `https://amoy.polygonscan.com/tx/${functionResult.paymentTx}`,
           agentWallet: functionResult.agentWallet
         } : null
       };

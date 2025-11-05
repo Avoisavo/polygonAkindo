@@ -34,6 +34,7 @@ interface PaymentInfo {
   paid: boolean;
   amount: string;
   txHash: string;
+  explorerLink?: string;
   agentWallet: string;
 }
 
