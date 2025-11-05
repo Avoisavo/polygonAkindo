@@ -10,7 +10,7 @@ export const PAYMENT_RECIPIENT_ADDRESS = "0xa6f7df49e2d4b48bc1eea0886fb8798fb510
  */
 export const PAYMENT_ROUTES = {
   "GET /blog": {
-    price: "$0.005",  // 0.5 cents per blog access
+    price: "$0.01",  // 1 cent per blog access
     network: "polygon-amoy",
     config: {
       description: "Access to Tech Insights Blog premium content",
