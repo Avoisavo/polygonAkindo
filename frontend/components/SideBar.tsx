@@ -35,7 +35,7 @@ const Sidebar = () => {
           <div className="w-8 h-8 bg-gradient-to-br from-gray-800 to-black rounded-lg flex items-center justify-center">
             <div className="w-5 h-5 text-white font-bold">logo</div>
           </div>
-          <span className="text-lg font-semibold text-gray-900">Our Name</span>
+          <span className="text-lg font-semibold text-gray-900">PolyGare</span>
         </div>
       </div>
 

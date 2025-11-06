@@ -23,8 +23,8 @@ export function Header() {
             <Link href="/register" className="text-gray-700 hover:text-gray-900 transition-colors">
               Register Site
             </Link>
-            <Link href="/dashboard" className="text-gray-700 hover:text-gray-900 transition-colors">
-              Dashboard
+            <Link href="/chatbot" className="text-gray-700 hover:text-gray-900 transition-colors">
+              Chatbot
             </Link>
           </nav>
 
