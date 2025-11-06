@@ -32,10 +32,8 @@ const Sidebar = () => {
       {/* Logo */}
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-gray-800 to-black rounded-lg flex items-center justify-center">
-            <div className="w-5 h-5 text-white font-bold">logo</div>
-          </div>
-          <span className="text-lg font-semibold text-gray-900">PolyGare</span>
+          <img src="/landing/polygatelogo.png" alt="PolyGate" className="w-8 h-8 object-contain" />
+          <span className="text-lg font-semibold text-gray-900">PolyGate</span>
         </div>
       </div>
 
