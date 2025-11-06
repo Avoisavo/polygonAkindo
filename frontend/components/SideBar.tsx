@@ -1,4 +1,5 @@
 import { Home, Compass, BookOpen, Clock, Search, Command } from 'lucide-react';
+import Link from 'next/link';
 
 const Sidebar = () => {
   const navigationItems = [
@@ -54,15 +55,35 @@ const Sidebar = () => {
 
       {/* Navigation */}
       <nav className="px-2 space-y-1">
-        {navigationItems.map((item) => (
-          <button
-            key={item.label}
-            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-          >
-            <item.icon className="w-4 h-4" />
-            <span>{item.label}</span>
-          </button>
-        ))}
+        {navigationItems.map((item) => {
+          const content = (
+            <>
+              <item.icon className="w-4 h-4" />
+              <span>{item.label}</span>
+            </>
+          );
+
+          if (item.label === 'Home') {
+            return (
+              <Link
+                key={item.label}
+                href="/register"
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                {content}
+              </Link>
+            );
+          }
+
+          return (
+            <button
+              key={item.label}
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              {content}
+            </button>
+          );
+        })}
       </nav>
 
       {/* Conversation History */}
