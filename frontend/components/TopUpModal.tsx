@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useLayerZeroBridge } from '@/hooks/useLayerZeroBridge';
+import { usePolygonTransfer } from '@/hooks/usePolygonTransfer';
 import { useAccount } from 'wagmi';
 
 interface TopUpModalProps {
@@ -19,6 +20,7 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
 
     // Use approveAndBridge from the hook
     const { approveAndBridge, isLoading: isBridgeLoading } = useLayerZeroBridge();
+    const { transferUSDC, isLoading: isTransferLoading } = usePolygonTransfer();
     const { isConnected } = useAccount();
 
     const resetState = () => {
@@ -75,6 +77,17 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
             } catch (error) {
                 console.error('Bridge failed:', error);
             }
+        } else if (selectedNetwork === 'polygon-amoy' && selectedCoin === 'USDC') {
+            try {
+                // Direct USDC transfer on Polygon Amoy
+                const hash = await transferUSDC(amount);
+                if (hash) {
+                    setTxHash(hash);
+                    setShowSuccess(true);
+                }
+            } catch (error) {
+                console.error('Transfer failed:', error);
+            }
         } else {
             // TODO: Implement other top-up logic
             console.log('Top Up:', { selectedNetwork, selectedCoin, amount });
@@ -83,7 +96,8 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
     };
 
     const isBaseUsdc = selectedNetwork === 'base-sepolia' && selectedCoin === 'USDC';
-    const isLoading = isBridgeLoading;
+    const isPolygonUsdc = selectedNetwork === 'polygon-amoy' && selectedCoin === 'USDC';
+    const isLoading = isBridgeLoading || isTransferLoading;
 
     if (!isOpen) return null;
 
@@ -111,49 +125,68 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
                             Top Up Submitted!
                         </h2>
                         <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
-                            Your cross-chain transaction is on its way.
+                            {isBaseUsdc ? 'Your cross-chain transaction is on its way.' : 'Your transaction has been submitted.'}
                         </p>
 
                         <div className="space-y-4 text-left">
                             <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
                                 <h3 className="mb-2 text-sm font-medium text-gray-900 dark:text-white">Transaction Details</h3>
 
-                                {/* Base Sepolia Hash */}
-                                <div className="mb-3">
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Base Sepolia (Source)</p>
-                                    <a
-                                        href={`https://sepolia.basescan.org/tx/${txHash}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="break-all text-xs text-blue-600 hover:underline dark:text-blue-400"
-                                    >
-                                        {txHash}
-                                    </a>
-                                </div>
+                                {isBaseUsdc ? (
+                                    <>
+                                        {/* Base Sepolia Hash */}
+                                        <div className="mb-3">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">Base Sepolia (Source)</p>
+                                            <a
+                                                href={`https://sepolia.basescan.org/tx/${txHash}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="break-all text-xs text-blue-600 hover:underline dark:text-blue-400"
+                                            >
+                                                {txHash}
+                                            </a>
+                                        </div>
 
-                                {/* LayerZero Scan */}
-                                <div className="mb-3">
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">LayerZero Status</p>
-                                    <a
-                                        href={`https://testnet.layerzeroscan.com/tx/${txHash}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-1 text-xs text-blue-600 hover:underline dark:text-blue-400"
-                                    >
-                                        View on LayerZero Scan
-                                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                        </svg>
-                                    </a>
-                                </div>
+                                        {/* LayerZero Scan */}
+                                        <div className="mb-3">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">LayerZero Status</p>
+                                            <a
+                                                href={`https://testnet.layerzeroscan.com/tx/${txHash}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-1 text-xs text-blue-600 hover:underline dark:text-blue-400"
+                                            >
+                                                View on LayerZero Scan
+                                                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                </svg>
+                                            </a>
+                                        </div>
 
-                                {/* Polygon Amoy Note */}
-                                <div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Polygon Amoy (Destination)</p>
-                                    <p className="text-xs text-gray-600 dark:text-gray-300 italic">
-                                        The destination transaction hash will appear on LayerZero Scan once the message is delivered.
-                                    </p>
-                                </div>
+                                        {/* Polygon Amoy Note */}
+                                        <div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">Polygon Amoy (Destination)</p>
+                                            <p className="text-xs text-gray-600 dark:text-gray-300 italic">
+                                                The destination transaction hash will appear on LayerZero Scan once the message is delivered.
+                                            </p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        {/* Polygon Amoy Hash */}
+                                        <div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">Polygon Amoy</p>
+                                            <a
+                                                href={`https://amoy.polygonscan.com/tx/${txHash}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="break-all text-xs text-blue-600 hover:underline dark:text-blue-400"
+                                            >
+                                                {txHash}
+                                            </a>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
 
