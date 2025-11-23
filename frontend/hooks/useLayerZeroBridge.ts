@@ -126,11 +126,50 @@ export function useLayerZeroBridge() {
         }
     }, [address, walletClient]);
 
+    // Approve and Bridge in one flow
+    const approveAndBridge = useCallback(async (amount: string, decimals: number = 6) => {
+        if (!address || !walletClient || !publicClient) return;
+
+        setIsLoading(true);
+        try {
+            // 1. Check Allowance
+            const hasAllowance = await checkAllowance(amount, decimals);
+
+            if (!hasAllowance) {
+                console.log('Insufficient allowance, requesting approval...');
+                // 2. Approve if needed
+                const amountToApprove = parseUnits(amount, decimals);
+                const hash = await walletClient.writeContract({
+                    address: LAYERZERO_CONFIG.baseSepolia.usdcAddress,
+                    abi: ERC20_ABI,
+                    functionName: 'approve',
+                    args: [LAYERZERO_CONFIG.baseSepolia.oftAdapterAddress, amountToApprove],
+                });
+
+                console.log('Approval transaction sent:', hash);
+                // Wait for transaction to be mined
+                await publicClient.waitForTransactionReceipt({ hash });
+                console.log('Approval confirmed');
+            }
+
+            // 3. Bridge
+            console.log('Proceeding to bridge...');
+            return await send(amount, decimals);
+
+        } catch (error) {
+            console.error('Error in approveAndBridge:', error);
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    }, [address, walletClient, publicClient, checkAllowance, send]);
+
     return {
         quote,
         send,
         checkAllowance,
         approve,
+        approveAndBridge,
         isLoading
     };
 }

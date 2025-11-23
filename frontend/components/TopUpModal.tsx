@@ -14,18 +14,15 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
     const [selectedNetwork, setSelectedNetwork] = useState('polygon-amoy');
     const [selectedCoin, setSelectedCoin] = useState('USDC');
     const [amount, setAmount] = useState('');
-    const [needsApproval, setNeedsApproval] = useState(false);
-    const [isCheckingAllowance, setIsCheckingAllowance] = useState(false);
-
     const [txHash, setTxHash] = useState<string | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
 
-    const { checkAllowance, approve, send, isLoading: isBridgeLoading } = useLayerZeroBridge();
+    // Use approveAndBridge from the hook
+    const { approveAndBridge, isLoading: isBridgeLoading } = useLayerZeroBridge();
     const { isConnected } = useAccount();
 
     const resetState = () => {
         setAmount('');
-        setNeedsApproval(false);
         setTxHash(null);
         setShowSuccess(false);
     };
@@ -64,41 +61,13 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
             setSelectedCoin(newCoins[0].value);
         }
         setAmount('');
-        setNeedsApproval(false);
-    };
-
-    // Check allowance when amount or coin changes (only for Base Sepolia USDC)
-    useEffect(() => {
-        const check = async () => {
-            if (selectedNetwork === 'base-sepolia' && selectedCoin === 'USDC' && amount && parseFloat(amount) > 0) {
-                setIsCheckingAllowance(true);
-                const hasAllowance = await checkAllowance(amount);
-                setNeedsApproval(!hasAllowance);
-                setIsCheckingAllowance(false);
-            } else {
-                setNeedsApproval(false);
-            }
-        };
-
-        const timeoutId = setTimeout(check, 500); // Debounce check
-        return () => clearTimeout(timeoutId);
-    }, [selectedNetwork, selectedCoin, amount, checkAllowance]);
-
-    const handleApprove = async () => {
-        try {
-            await approve(amount);
-            // Re-check allowance after approval
-            const hasAllowance = await checkAllowance(amount);
-            setNeedsApproval(!hasAllowance);
-        } catch (error) {
-            console.error('Approval failed:', error);
-        }
     };
 
     const handleTopUp = async () => {
         if (selectedNetwork === 'base-sepolia' && selectedCoin === 'USDC') {
             try {
-                const hash = await send(amount);
+                // Use the unified flow
+                const hash = await approveAndBridge(amount);
                 if (hash) {
                     setTxHash(hash);
                     setShowSuccess(true);
@@ -114,7 +83,7 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
     };
 
     const isBaseUsdc = selectedNetwork === 'base-sepolia' && selectedCoin === 'USDC';
-    const isLoading = isBridgeLoading || isCheckingAllowance;
+    const isLoading = isBridgeLoading;
 
     if (!isOpen) return null;
 
@@ -276,23 +245,13 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
                                 Cancel
                             </button>
 
-                            {isBaseUsdc && needsApproval ? (
-                                <button
-                                    onClick={handleApprove}
-                                    disabled={isLoading || !amount || parseFloat(amount) <= 0}
-                                    className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    {isLoading ? 'Processing...' : 'Approve USDC'}
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={handleTopUp}
-                                    disabled={isLoading || !amount || parseFloat(amount) <= 0}
-                                    className="flex-1 rounded-lg bg-gradient-to-r from-gray-800 to-black px-4 py-2.5 text-sm font-medium text-white transition-colors hover:from-gray-700 hover:to-gray-900 disabled:cursor-not-allowed disabled:opacity-50 dark:from-white dark:to-gray-200 dark:text-black dark:hover:from-gray-200 dark:hover:to-gray-300"
-                                >
-                                    {isLoading ? 'Processing...' : (isBaseUsdc ? 'Bridge to Agent' : 'Top Up')}
-                                </button>
-                            )}
+                            <button
+                                onClick={handleTopUp}
+                                disabled={isLoading || !amount || parseFloat(amount) <= 0}
+                                className="flex-1 rounded-lg bg-gradient-to-r from-gray-800 to-black px-4 py-2.5 text-sm font-medium text-white transition-colors hover:from-gray-700 hover:to-gray-900 disabled:cursor-not-allowed disabled:opacity-50 dark:from-white dark:to-gray-200 dark:text-black dark:hover:from-gray-200 dark:hover:to-gray-300"
+                            >
+                                {isLoading ? 'Processing...' : (isBaseUsdc ? 'Bridge to Agent' : 'Top Up')}
+                            </button>
                         </div>
                     </>
                 )}
