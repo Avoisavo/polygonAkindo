@@ -25,12 +25,6 @@ async function getWalletBalance(address = '0x7dec10140f6a10dbdc0b9b4d8ba4d468b1b
             transport: http()
         });
 
-        // Native Token (POL) Balance
-        const balanceWei = await client.getBalance({
-            address: address
-        });
-        const balanceEth = formatEther(balanceWei);
-
         // USDC Token Balance
         const usdcAddress = '0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582';
         const erc20Abi = [
@@ -71,27 +65,16 @@ async function getWalletBalance(address = '0x7dec10140f6a10dbdc0b9b4d8ba4d468b1b
 
         const usdcFormatted = formatUnits(usdcBalance, usdcDecimals);
 
-        console.log(`✅ Balance: ${balanceEth} ${chain.nativeCurrency.symbol}`);
         console.log(`✅ USDC Balance: ${usdcFormatted} ${usdcSymbol}`);
 
         return {
             success: true,
             address: address,
             network: network,
-            native: {
-                balanceWei: balanceWei.toString(),
-                balance: balanceEth,
-                symbol: chain.nativeCurrency.symbol
-            },
-            usdc: {
-                balanceUnits: usdcBalance.toString(),
-                balance: usdcFormatted,
-                symbol: usdcSymbol,
-                address: usdcAddress
-            },
-            // Keep top-level for backward compatibility if needed, or just for easy access
-            balance: balanceEth,
-            symbol: chain.nativeCurrency.symbol
+            // Only returning USDC as requested
+            balance: usdcFormatted,
+            symbol: usdcSymbol,
+            tokenAddress: usdcAddress
         };
 
     } catch (error) {
@@ -106,7 +89,7 @@ async function getWalletBalance(address = '0x7dec10140f6a10dbdc0b9b4d8ba4d468b1b
 // Function metadata for AI agent
 const metadata = {
     name: 'getWalletBalance',
-    description: 'Get the native token (POL) and USDC balance. If the user asks for "my balance", "agent balance", or just "balance" without an address, CALL THIS FUNCTION WITHOUT ARGUMENTS to use the default Agent Wallet.',
+    description: 'Get the USDC balance. If the user asks for "my balance", "agent balance", or just "balance" without an address, CALL THIS FUNCTION WITHOUT ARGUMENTS to use the default Agent Wallet.',
     parameters: {
         type: 'object',
         properties: {
