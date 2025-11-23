@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { sendMessageToAgent } from '@/lib/api';
 import { useAccount, useWalletClient } from 'wagmi';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { parseEther, getAddress } from 'viem';
 import { Brain } from 'lucide-react';
 import Sidebar from '@/components/SideBar';
@@ -273,6 +274,7 @@ export default function ChatbotPage() {
               </svg>
               New Chat
             </button>
+            <ConnectButton />
           </div>
         </header>
 

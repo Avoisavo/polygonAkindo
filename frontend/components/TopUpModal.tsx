@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useLayerZeroBridge } from '@/hooks/useLayerZeroBridge';
+import { useAccount } from 'wagmi';
 
 interface TopUpModalProps {
     isOpen: boolean;
@@ -12,8 +14,26 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
     const [selectedNetwork, setSelectedNetwork] = useState('polygon-amoy');
     const [selectedCoin, setSelectedCoin] = useState('USDC');
     const [amount, setAmount] = useState('');
+    const [needsApproval, setNeedsApproval] = useState(false);
+    const [isCheckingAllowance, setIsCheckingAllowance] = useState(false);
 
-    if (!isOpen) return null;
+    const [txHash, setTxHash] = useState<string | null>(null);
+    const [showSuccess, setShowSuccess] = useState(false);
+
+    const { checkAllowance, approve, send, isLoading: isBridgeLoading } = useLayerZeroBridge();
+    const { isConnected } = useAccount();
+
+    const resetState = () => {
+        setAmount('');
+        setNeedsApproval(false);
+        setTxHash(null);
+        setShowSuccess(false);
+    };
+
+    const handleClose = () => {
+        resetState();
+        onClose();
+    };
 
     const networks = [
         { value: 'polygon-amoy', label: 'Polygon Amoy' },
@@ -43,111 +63,239 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
         if (newCoins.length > 0) {
             setSelectedCoin(newCoins[0].value);
         }
+        setAmount('');
+        setNeedsApproval(false);
     };
 
-    const handleTopUp = () => {
-        // TODO: Implement top-up logic
-        console.log('Top Up:', { selectedNetwork, selectedCoin, amount });
-        onClose();
+    // Check allowance when amount or coin changes (only for Base Sepolia USDC)
+    useEffect(() => {
+        const check = async () => {
+            if (selectedNetwork === 'base-sepolia' && selectedCoin === 'USDC' && amount && parseFloat(amount) > 0) {
+                setIsCheckingAllowance(true);
+                const hasAllowance = await checkAllowance(amount);
+                setNeedsApproval(!hasAllowance);
+                setIsCheckingAllowance(false);
+            } else {
+                setNeedsApproval(false);
+            }
+        };
+
+        const timeoutId = setTimeout(check, 500); // Debounce check
+        return () => clearTimeout(timeoutId);
+    }, [selectedNetwork, selectedCoin, amount, checkAllowance]);
+
+    const handleApprove = async () => {
+        try {
+            await approve(amount);
+            // Re-check allowance after approval
+            const hasAllowance = await checkAllowance(amount);
+            setNeedsApproval(!hasAllowance);
+        } catch (error) {
+            console.error('Approval failed:', error);
+        }
     };
+
+    const handleTopUp = async () => {
+        if (selectedNetwork === 'base-sepolia' && selectedCoin === 'USDC') {
+            try {
+                const hash = await send(amount);
+                if (hash) {
+                    setTxHash(hash);
+                    setShowSuccess(true);
+                }
+            } catch (error) {
+                console.error('Bridge failed:', error);
+            }
+        } else {
+            // TODO: Implement other top-up logic
+            console.log('Top Up:', { selectedNetwork, selectedCoin, amount });
+            onClose();
+        }
+    };
+
+    const isBaseUsdc = selectedNetwork === 'base-sepolia' && selectedCoin === 'USDC';
+    const isLoading = isBridgeLoading || isCheckingAllowance;
+
+    if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900">
                 {/* Close button */}
                 <button
-                    onClick={onClose}
+                    onClick={handleClose}
                     className="absolute right-4 top-4 rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
                 >
                     <X className="h-5 w-5" />
                 </button>
 
-                {/* Header */}
-                <div className="mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        Top Up Wallet
-                    </h2>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        Add funds to your agent wallet
-                    </p>
-                </div>
-
-                {/* Form */}
-                <div className="space-y-4">
-                    {/* Network Selection */}
-                    <div>
-                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Network
-                        </label>
-                        <select
-                            value={selectedNetwork}
-                            onChange={(e) => handleNetworkChange(e.target.value)}
-                            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition-colors focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-white dark:focus:ring-white/20"
-                        >
-                            {networks.map((network) => (
-                                <option key={network.value} value={network.value}>
-                                    {network.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Coin Selection */}
-                    <div>
-                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Coin
-                        </label>
-                        <select
-                            value={selectedCoin}
-                            onChange={(e) => setSelectedCoin(e.target.value)}
-                            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition-colors focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-white dark:focus:ring-white/20"
-                        >
-                            {coins.map((coin) => (
-                                <option key={coin.value} value={coin.value}>
-                                    {coin.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Amount Input */}
-                    <div>
-                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Amount
-                        </label>
-                        <div className="relative">
-                            <input
-                                type="number"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                placeholder="0.00"
-                                min="0"
-                                step="0.01"
-                                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition-colors focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-white dark:focus:ring-white/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            />
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-sm text-gray-500 dark:text-gray-400">
-                                {selectedCoin}
+                {showSuccess ? (
+                    <div className="text-center">
+                        <div className="mb-4 flex justify-center">
+                            <div className="rounded-full bg-green-100 p-3 dark:bg-green-900/30">
+                                <svg className="h-8 w-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
                             </div>
                         </div>
-                    </div>
-                </div>
+                        <h2 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">
+                            Top Up Submitted!
+                        </h2>
+                        <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
+                            Your cross-chain transaction is on its way.
+                        </p>
 
-                {/* Action Buttons */}
-                <div className="mt-6 flex gap-3">
-                    <button
-                        onClick={onClose}
-                        className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleTopUp}
-                        disabled={!amount || parseFloat(amount) <= 0}
-                        className="flex-1 rounded-lg bg-gradient-to-r from-gray-800 to-black px-4 py-2.5 text-sm font-medium text-white transition-colors hover:from-gray-700 hover:to-gray-900 disabled:cursor-not-allowed disabled:opacity-50 dark:from-white dark:to-gray-200 dark:text-black dark:hover:from-gray-200 dark:hover:to-gray-300"
-                    >
-                        Top Up
-                    </button>
-                </div>
+                        <div className="space-y-4 text-left">
+                            <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                                <h3 className="mb-2 text-sm font-medium text-gray-900 dark:text-white">Transaction Details</h3>
+
+                                {/* Base Sepolia Hash */}
+                                <div className="mb-3">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Base Sepolia (Source)</p>
+                                    <a
+                                        href={`https://sepolia.basescan.org/tx/${txHash}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="break-all text-xs text-blue-600 hover:underline dark:text-blue-400"
+                                    >
+                                        {txHash}
+                                    </a>
+                                </div>
+
+                                {/* LayerZero Scan */}
+                                <div className="mb-3">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">LayerZero Status</p>
+                                    <a
+                                        href={`https://testnet.layerzeroscan.com/tx/${txHash}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1 text-xs text-blue-600 hover:underline dark:text-blue-400"
+                                    >
+                                        View on LayerZero Scan
+                                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                        </svg>
+                                    </a>
+                                </div>
+
+                                {/* Polygon Amoy Note */}
+                                <div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Polygon Amoy (Destination)</p>
+                                    <p className="text-xs text-gray-600 dark:text-gray-300 italic">
+                                        The destination transaction hash will appear on LayerZero Scan once the message is delivered.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={handleClose}
+                            className="mt-6 w-full rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
+                        >
+                            Close
+                        </button>
+                    </div>
+                ) : (
+                    <>
+                        {/* Header */}
+                        <div className="mb-6">
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                Top Up Wallet
+                            </h2>
+                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                Add funds to your agent wallet
+                            </p>
+                        </div>
+
+                        {/* Form */}
+                        <div className="space-y-4">
+                            {/* Network Selection */}
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Network
+                                </label>
+                                <select
+                                    value={selectedNetwork}
+                                    onChange={(e) => handleNetworkChange(e.target.value)}
+                                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition-colors focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-white dark:focus:ring-white/20"
+                                >
+                                    {networks.map((network) => (
+                                        <option key={network.value} value={network.value}>
+                                            {network.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Coin Selection */}
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Coin
+                                </label>
+                                <select
+                                    value={selectedCoin}
+                                    onChange={(e) => setSelectedCoin(e.target.value)}
+                                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition-colors focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-white dark:focus:ring-white/20"
+                                >
+                                    {coins.map((coin) => (
+                                        <option key={coin.value} value={coin.value}>
+                                            {coin.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Amount Input */}
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Amount
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        value={amount}
+                                        onChange={(e) => setAmount(e.target.value)}
+                                        placeholder="0.00"
+                                        min="0"
+                                        step="0.01"
+                                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition-colors focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-white dark:focus:ring-white/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    />
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-sm text-gray-500 dark:text-gray-400">
+                                        {selectedCoin}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="mt-6 flex gap-3">
+                            <button
+                                onClick={handleClose}
+                                className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                            >
+                                Cancel
+                            </button>
+
+                            {isBaseUsdc && needsApproval ? (
+                                <button
+                                    onClick={handleApprove}
+                                    disabled={isLoading || !amount || parseFloat(amount) <= 0}
+                                    className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {isLoading ? 'Processing...' : 'Approve USDC'}
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleTopUp}
+                                    disabled={isLoading || !amount || parseFloat(amount) <= 0}
+                                    className="flex-1 rounded-lg bg-gradient-to-r from-gray-800 to-black px-4 py-2.5 text-sm font-medium text-white transition-colors hover:from-gray-700 hover:to-gray-900 disabled:cursor-not-allowed disabled:opacity-50 dark:from-white dark:to-gray-200 dark:text-black dark:hover:from-gray-200 dark:hover:to-gray-300"
+                                >
+                                    {isLoading ? 'Processing...' : (isBaseUsdc ? 'Bridge to Agent' : 'Top Up')}
+                                </button>
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

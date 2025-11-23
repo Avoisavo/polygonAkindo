@@ -24,6 +24,25 @@ export const polygonAmoy = {
   testnet: true,
 } as const satisfies Chain;
 
+
+
+// Base Sepolia Testnet Configuration
+export const baseSepolia = {
+  id: 84532,
+  name: 'Base Sepolia Testnet',
+  iconUrl: 'https://avatars.githubusercontent.com/u/108554348?s=280&v=4',
+  iconBackground: '#fff',
+  nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://sepolia.base.org'] },
+    public: { http: ['https://sepolia.base.org'] },
+  },
+  blockExplorers: {
+    default: { name: 'BaseScan', url: 'https://sepolia.basescan.org' },
+  },
+  testnet: true,
+} as const satisfies Chain;
+
 // Network information
 export const getNetworkInfo = () => {
   return {
@@ -38,8 +57,8 @@ export const getNetworkInfo = () => {
   };
 };
 
-// Export the chain for use in providers
-export const chains = [polygonAmoy] as const;
+// Export the chains for use in providers
+export const chains = [polygonAmoy, baseSepolia] as const;
 
 // Contract Addresses on Polygon Amoy
 export const X402POLY_CONTRACT = '0xe5E43468bcBd09391bF73d0D43a624537c46bBa9' as const;
