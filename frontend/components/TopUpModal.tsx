@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useLayerZeroBridge } from '@/hooks/useLayerZeroBridge';
 import { usePolygonTransfer } from '@/hooks/usePolygonTransfer';
+import { useAMMSwap } from '@/hooks/useAMMSwap';
 import { useAccount } from 'wagmi';
 
 interface TopUpModalProps {
@@ -21,6 +22,7 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
     // Use approveAndBridge from the hook
     const { approveAndBridge, isLoading: isBridgeLoading } = useLayerZeroBridge();
     const { transferUSDC, isLoading: isTransferLoading } = usePolygonTransfer();
+    const { getSwapQuote, swapAndTransfer, quote, isLoading: isSwapLoading } = useAMMSwap();
     const { isConnected } = useAccount();
 
     const resetState = () => {
@@ -65,6 +67,13 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
         setAmount('');
     };
 
+    // Get swap quote when amount changes and AMOY is selected
+    useEffect(() => {
+        if (selectedNetwork === 'polygon-amoy' && selectedCoin === 'AMOY' && amount) {
+            getSwapQuote(amount);
+        }
+    }, [amount, selectedNetwork, selectedCoin, getSwapQuote]);
+
     const handleTopUp = async () => {
         if (selectedNetwork === 'base-sepolia' && selectedCoin === 'USDC') {
             try {
@@ -88,6 +97,17 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
             } catch (error) {
                 console.error('Transfer failed:', error);
             }
+        } else if (selectedNetwork === 'polygon-amoy' && selectedCoin === 'AMOY') {
+            try {
+                // Swap AMOY to USDC via AMM and send to agent wallet
+                const hash = await swapAndTransfer(amount);
+                if (hash) {
+                    setTxHash(hash);
+                    setShowSuccess(true);
+                }
+            } catch (error) {
+                console.error('Swap failed:', error);
+            }
         } else {
             // TODO: Implement other top-up logic
             console.log('Top Up:', { selectedNetwork, selectedCoin, amount });
@@ -97,7 +117,8 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
 
     const isBaseUsdc = selectedNetwork === 'base-sepolia' && selectedCoin === 'USDC';
     const isPolygonUsdc = selectedNetwork === 'polygon-amoy' && selectedCoin === 'USDC';
-    const isLoading = isBridgeLoading || isTransferLoading;
+    const isPolygonAmoy = selectedNetwork === 'polygon-amoy' && selectedCoin === 'AMOY';
+    const isLoading = isBridgeLoading || isTransferLoading || isSwapLoading;
 
     if (!isOpen) return null;
 
@@ -267,6 +288,19 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Swap Preview for AMOY */}
+                            {isPolygonAmoy && quote && amount && parseFloat(amount) > 0 && (
+                                <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/30">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-600 dark:text-gray-400">You will receive:</span>
+                                        <span className="font-semibold text-blue-600 dark:text-blue-400">~{quote} USDC</span>
+                                    </div>
+                                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        Swapped via AMM • 1% fee included
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Action Buttons */}
@@ -283,7 +317,7 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
                                 disabled={isLoading || !amount || parseFloat(amount) <= 0}
                                 className="flex-1 rounded-lg bg-gradient-to-r from-gray-800 to-black px-4 py-2.5 text-sm font-medium text-white transition-colors hover:from-gray-700 hover:to-gray-900 disabled:cursor-not-allowed disabled:opacity-50 dark:from-white dark:to-gray-200 dark:text-black dark:hover:from-gray-200 dark:hover:to-gray-300"
                             >
-                                {isLoading ? 'Processing...' : (isBaseUsdc ? 'Bridge to Agent' : 'Top Up')}
+                                {isLoading ? 'Processing...' : (isBaseUsdc ? 'Bridge to Agent' : isPolygonAmoy ? 'Swap & Send to Agent' : 'Top Up')}
                             </button>
                         </div>
                     </>

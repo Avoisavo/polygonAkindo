@@ -63,4 +63,7 @@ export const chains = [polygonAmoy, baseSepolia] as const;
 // Contract Addresses on Polygon Amoy
 export const X402POLY_CONTRACT = '0xe5E43468bcBd09391bF73d0D43a624537c46bBa9' as const;
 export const PAYMENT_TOKEN = '0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582' as const; // USDC on Amoy
+export const AMM_REGISTRY_CONTRACT = '0xAc1531A6b130aa3027130F97e33c80698e5cfafc' as const;
+export const AMM_EXCHANGE_CONTRACT = '0x55EF26B90F38a6DcB9ea98B1257D4666df60933C' as const; // MATIC/USDC Exchange
+export const AGENT_WALLET = '0x7dec10140f6a10dbdc0b9b4d8ba4d468b1b8e6e6' as const;
 
