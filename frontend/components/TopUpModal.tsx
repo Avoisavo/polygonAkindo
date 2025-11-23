@@ -10,7 +10,7 @@ interface TopUpModalProps {
 
 export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
     const [selectedNetwork, setSelectedNetwork] = useState('polygon-amoy');
-    const [selectedCoin, setSelectedCoin] = useState('MATIC');
+    const [selectedCoin, setSelectedCoin] = useState('USDC');
     const [amount, setAmount] = useState('');
 
     if (!isOpen) return null;
@@ -20,12 +20,30 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
         { value: 'base-sepolia', label: 'Base Sepolia' },
     ];
 
-    const coins = [
-        { value: 'MATIC', label: 'MATIC' },
-        { value: 'USDC', label: 'USDC' },
-        { value: 'USDT', label: 'USDT' },
-        { value: 'ETH', label: 'ETH' },
-    ];
+    // Dynamic coins based on selected network
+    const coinsByNetwork: Record<string, Array<{ value: string; label: string }>> = {
+        'polygon-amoy': [
+            { value: 'AMOY', label: 'AMOY' },
+            { value: 'USDC', label: 'USDC' },
+        ],
+        'base-sepolia': [
+            { value: 'ETH', label: 'ETH' },
+            { value: 'USDC', label: 'USDC' },
+            { value: 'PYUSD', label: 'PYUSD' },
+        ],
+    };
+
+    const coins = coinsByNetwork[selectedNetwork] || [];
+
+    // Handle network change
+    const handleNetworkChange = (network: string) => {
+        setSelectedNetwork(network);
+        // Reset coin to first available option when network changes
+        const newCoins = coinsByNetwork[network] || [];
+        if (newCoins.length > 0) {
+            setSelectedCoin(newCoins[0].value);
+        }
+    };
 
     const handleTopUp = () => {
         // TODO: Implement top-up logic
@@ -63,7 +81,7 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
                         </label>
                         <select
                             value={selectedNetwork}
-                            onChange={(e) => setSelectedNetwork(e.target.value)}
+                            onChange={(e) => handleNetworkChange(e.target.value)}
                             className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition-colors focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-white dark:focus:ring-white/20"
                         >
                             {networks.map((network) => (
@@ -105,7 +123,7 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
                                 placeholder="0.00"
                                 min="0"
                                 step="0.01"
-                                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition-colors focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-white dark:focus:ring-white/20"
+                                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition-colors focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-white dark:focus:ring-white/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-sm text-gray-500 dark:text-gray-400">
                                 {selectedCoin}
