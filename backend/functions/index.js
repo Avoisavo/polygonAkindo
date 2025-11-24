@@ -28,7 +28,7 @@ async function executeFunction(functionName, args) {
   if (functionName === 'scrapeWebsite') {
     result = await functions[functionName](args.url, args.userId);
   } else if (functionName === 'getWalletBalance') {
-    result = await functions[functionName](args.address, args.network);
+    result = await functions[functionName](args.address);
   } else {
     // Generic call for other functions
     result = await functions[functionName](args);

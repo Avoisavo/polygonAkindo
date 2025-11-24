@@ -70,11 +70,12 @@ async function getWalletBalance(address = '0x7dec10140f6a10dbdc0b9b4d8ba4d468b1b
         return {
             success: true,
             address: address,
-            network: network,
-            // Only returning USDC as requested
+            network: 'Polygon Amoy',
+            token: 'USDC',
             balance: usdcFormatted,
             symbol: usdcSymbol,
-            tokenAddress: usdcAddress
+            tokenAddress: usdcAddress,
+            message: `USDC Balance on Polygon Amoy: ${usdcFormatted} ${usdcSymbol}`
         };
 
     } catch (error) {
@@ -89,7 +90,7 @@ async function getWalletBalance(address = '0x7dec10140f6a10dbdc0b9b4d8ba4d468b1b
 // Function metadata for AI agent
 const metadata = {
     name: 'getWalletBalance',
-    description: 'Get the USDC balance. If the user asks for "my balance", "agent balance", or just "balance" without an address, CALL THIS FUNCTION WITHOUT ARGUMENTS to use the default Agent Wallet.',
+    description: 'Get the USDC balance on Polygon Amoy network ONLY. This function returns ONLY the USDC token balance, nothing else. If the user asks for \"my balance\", \"agent balance\", \"wallet balance\", or just \"balance\" without an address, CALL THIS FUNCTION WITHOUT ARGUMENTS to use the default Agent Wallet. The response will ONLY contain the USDC balance on Polygon Amoy.',
     parameters: {
         type: 'object',
         properties: {
