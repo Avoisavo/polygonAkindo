@@ -50,7 +50,6 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
         'base-sepolia': [
             { value: 'ETH', label: 'ETH' },
             { value: 'USDC', label: 'USDC' },
-            { value: 'PYUSD', label: 'PYUSD' },
         ],
     };
 
