@@ -1,6 +1,6 @@
 {
-    "name": "@zhiweizhiwei/x402-sdk",
-    "version": "0.1.0",
+    "name": "@polypolygate/x402-sdk",
+    "version": "0.1.1",
     "description": "SDK for monetizing content with x402 protocol",
     "main": "index.js",
     "scripts": {
@@ -15,6 +15,7 @@
     "author": "PolyGateTeam",
     "license": "MIT",
     "dependencies": {
+        "@layerzerolabs/lz-v2-utilities": "^3.0.147",
         "dotenv": "^16.4.5",
         "ethers": "^6.11.1"
     }
