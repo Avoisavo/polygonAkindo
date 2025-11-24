@@ -7,22 +7,9 @@ export const PAYMENT_RECIPIENT_ADDRESS = "0xa6f7df49e2d4b48bc1eea0886fb8798fb510
 
 /**
  * Payment configuration for different routes
+ * Routes are dynamically loaded from the blockchain
  */
-export let PAYMENT_ROUTES = {
-  "GET /blog": {
-    price: "$0.01",  // 1 cent per blog access
-    network: "polygon-amoy",
-    config: {
-      description: "Access to Tech Insights Blog premium content",
-      inputSchema: {
-        type: "object",
-        properties: {
-          userAgent: { type: "string" }
-        }
-      }
-    }
-  },
-};
+export let PAYMENT_ROUTES = {};
 
 /**
  * Updates the payment routes and recreates the middleware
@@ -30,7 +17,8 @@ export let PAYMENT_ROUTES = {
  */
 export function updatePaymentRoutes(newRoutes) {
   PAYMENT_ROUTES = { ...PAYMENT_ROUTES, ...newRoutes };
-  console.log("Updated PAYMENT_ROUTES:", Object.keys(PAYMENT_ROUTES));
+  console.log("Updated PAYMENT_ROUTES:");
+  console.log(JSON.stringify(PAYMENT_ROUTES, null, 2));
 }
 
 /**
