@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAccount, useWalletClient, usePublicClient } from 'wagmi';
 import { parseEther, formatUnits } from 'viem';
-import { AMM_EXCHANGE_CONTRACT, AGENT_WALLET } from '@/lib/networkConfig';
+import { AMM_EXCHANGE_CONTRACT, BASE_SEPOLIA_EXCHANGE, AGENT_WALLET } from '@/lib/networkConfig';
 
 const EXCHANGE_ABI = [
     {
@@ -20,6 +20,22 @@ const EXCHANGE_ABI = [
         "outputs": [],
         "stateMutability": "payable",
         "type": "function"
+    },
+    {
+        "inputs": [
+            { "internalType": "uint256", "name": "_minTokens", "type": "uint256" }
+        ],
+        "name": "ethToTokenSwap",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getReserve",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
     }
 ] as const;
 
@@ -30,29 +46,25 @@ export function useAMMSwap() {
     const [isLoading, setIsLoading] = useState(false);
     const [quote, setQuote] = useState<string | null>(null);
 
-    const getSwapQuote = useCallback(async (ethAmount: string) => {
+    const getSwapQuote = useCallback(async (ethAmount: string, network: 'amoy' | 'base-sepolia' = 'amoy') => {
         if (!publicClient || !ethAmount || parseFloat(ethAmount) <= 0) {
             setQuote(null);
             return null;
         }
+
+        const exchangeAddress = network === 'base-sepolia' ? BASE_SEPOLIA_EXCHANGE : AMM_EXCHANGE_CONTRACT;
 
         try {
             const ethAmountWei = parseEther(ethAmount);
 
             // Get current reserves
             const ethReserve = await publicClient.getBalance({
-                address: AMM_EXCHANGE_CONTRACT,
+                address: exchangeAddress,
             });
 
             const tokenReserve = await publicClient.readContract({
-                address: AMM_EXCHANGE_CONTRACT,
-                abi: [{
-                    "inputs": [],
-                    "name": "getReserve",
-                    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-                    "stateMutability": "view",
-                    "type": "function"
-                }],
+                address: exchangeAddress,
+                abi: EXCHANGE_ABI,
                 functionName: 'getReserve',
             }) as bigint;
 
@@ -75,6 +87,7 @@ export function useAMMSwap() {
         }
     }, [publicClient]);
 
+    // Swap and transfer to agent (for Amoy)
     const swapAndTransfer = useCallback(async (ethAmount: string, minTokens?: string) => {
         if (!address || !walletClient || !ethAmount) {
             throw new Error('Wallet not connected or invalid amount');
@@ -91,7 +104,7 @@ export function useAMMSwap() {
                 minTokensWei = BigInt(Math.floor(parseFloat(minTokens) * 1e6));
             } else {
                 // Get quote and apply 8% slippage
-                const quoteAmount = await getSwapQuote(ethAmount);
+                const quoteAmount = await getSwapQuote(ethAmount, 'amoy');
                 if (!quoteAmount) {
                     throw new Error('Failed to get swap quote');
                 }
@@ -118,9 +131,52 @@ export function useAMMSwap() {
         }
     }, [address, walletClient, getSwapQuote]);
 
+    // Swap to self (for Base Sepolia before bridging)
+    const swapEthToToken = useCallback(async (ethAmount: string, minTokens?: string) => {
+        if (!address || !walletClient || !ethAmount) {
+            throw new Error('Wallet not connected or invalid amount');
+        }
+
+        setIsLoading(true);
+        try {
+            const ethAmountWei = parseEther(ethAmount);
+
+            // Calculate minimum tokens with 8% slippage if not provided
+            let minTokensWei: bigint;
+            if (minTokens) {
+                minTokensWei = BigInt(Math.floor(parseFloat(minTokens) * 1e6));
+            } else {
+                const quoteAmount = await getSwapQuote(ethAmount, 'base-sepolia');
+                if (!quoteAmount) {
+                    throw new Error('Failed to get swap quote');
+                }
+                const minAmount = parseFloat(quoteAmount) * 0.92; // 8% slippage
+                minTokensWei = BigInt(Math.floor(minAmount * 1e6));
+            }
+
+            // Execute swap to self
+            const hash = await walletClient.writeContract({
+                address: BASE_SEPOLIA_EXCHANGE,
+                abi: EXCHANGE_ABI,
+                functionName: 'ethToTokenSwap',
+                args: [minTokensWei],
+                value: ethAmountWei,
+            });
+
+            console.log('Swap to self transaction sent:', hash);
+            return hash;
+        } catch (error) {
+            console.error('Error swapping to self:', error);
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    }, [address, walletClient, getSwapQuote]);
+
     return {
         getSwapQuote,
         swapAndTransfer,
+        swapEthToToken,
         quote,
         isLoading
     };

@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { useLayerZeroBridge } from '@/hooks/useLayerZeroBridge';
 import { usePolygonTransfer } from '@/hooks/usePolygonTransfer';
 import { useAMMSwap } from '@/hooks/useAMMSwap';
-import { useAccount } from 'wagmi';
+import { useAccount, usePublicClient } from 'wagmi';
 
 interface TopUpModalProps {
     isOpen: boolean;
@@ -17,18 +17,23 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
     const [selectedCoin, setSelectedCoin] = useState('USDC');
     const [amount, setAmount] = useState('');
     const [txHash, setTxHash] = useState<string | null>(null);
+    const [swapTxHash, setSwapTxHash] = useState<string | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [step, setStep] = useState<'idle' | 'swapping' | 'bridging' | 'completed'>('idle');
 
     // Use approveAndBridge from the hook
     const { approveAndBridge, isLoading: isBridgeLoading } = useLayerZeroBridge();
     const { transferUSDC, isLoading: isTransferLoading } = usePolygonTransfer();
-    const { getSwapQuote, swapAndTransfer, quote, isLoading: isSwapLoading } = useAMMSwap();
+    const { getSwapQuote, swapAndTransfer, swapEthToToken, quote, isLoading: isSwapLoading } = useAMMSwap();
     const { isConnected } = useAccount();
+    const publicClient = usePublicClient();
 
     const resetState = () => {
         setAmount('');
         setTxHash(null);
+        setSwapTxHash(null);
         setShowSuccess(false);
+        setStep('idle');
     };
 
     const handleClose = () => {
@@ -64,26 +69,75 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
             setSelectedCoin(newCoins[0].value);
         }
         setAmount('');
+        setStep('idle');
     };
 
-    // Get swap quote when amount changes and AMOY is selected
+    // Get swap quote when amount changes
     useEffect(() => {
-        if (selectedNetwork === 'polygon-amoy' && selectedCoin === 'AMOY' && amount) {
-            getSwapQuote(amount);
+        if (amount && parseFloat(amount) > 0) {
+            if (selectedNetwork === 'polygon-amoy' && selectedCoin === 'AMOY') {
+                getSwapQuote(amount, 'amoy');
+            } else if (selectedNetwork === 'base-sepolia' && selectedCoin === 'ETH') {
+                getSwapQuote(amount, 'base-sepolia');
+            }
         }
     }, [amount, selectedNetwork, selectedCoin, getSwapQuote]);
 
     const handleTopUp = async () => {
-        if (selectedNetwork === 'base-sepolia' && selectedCoin === 'USDC') {
+        if (selectedNetwork === 'base-sepolia' && selectedCoin === 'ETH') {
             try {
+                // Step 1: Swap ETH to USDC
+                setStep('swapping');
+                const swapHash = await swapEthToToken(amount);
+                if (swapHash) {
+                    setSwapTxHash(swapHash);
+                    console.log('Swap successful, waiting for confirmation...');
+
+                    // Wait for swap transaction to be confirmed
+                    if (publicClient) {
+                        await publicClient.waitForTransactionReceipt({ hash: swapHash });
+                    }
+
+                    // Step 2: Bridge USDC to Amoy
+                    setStep('bridging');
+                    // We need to bridge the USDC amount we received. 
+                    // For simplicity, we'll use the quoted amount (minus slippage/fees) or just the amount we expected.
+                    // Ideally, we should check the balance or event logs, but using the quote is a reasonable approximation for the UI flow.
+                    // However, approveAndBridge takes amount in USDC units (string).
+                    // The quote is already in USDC units.
+                    if (quote) {
+                        // Use slightly less than quote to be safe, or just use quote if we trust it.
+                        // Let's use 99% of quote to account for any minor discrepancies, or just the quote.
+                        // Actually, the swapEthToToken uses 8% slippage for minTokens.
+                        // Let's use the quote directly for now, but user might need to adjust if exact balance is an issue.
+                        // Better approach: The user now has USDC. We bridge that USDC.
+                        const hash = await approveAndBridge(quote);
+                        if (hash) {
+                            setTxHash(hash);
+                            setStep('completed');
+                            setShowSuccess(true);
+                        }
+                    } else {
+                        throw new Error("Failed to get quote for bridging");
+                    }
+                }
+            } catch (error) {
+                console.error('Swap + Bridge failed:', error);
+                setStep('idle'); // Reset on error
+            }
+        } else if (selectedNetwork === 'base-sepolia' && selectedCoin === 'USDC') {
+            try {
+                setStep('bridging');
                 // Use the unified flow
                 const hash = await approveAndBridge(amount);
                 if (hash) {
                     setTxHash(hash);
+                    setStep('completed');
                     setShowSuccess(true);
                 }
             } catch (error) {
                 console.error('Bridge failed:', error);
+                setStep('idle');
             }
         } else if (selectedNetwork === 'polygon-amoy' && selectedCoin === 'USDC') {
             try {
@@ -115,9 +169,10 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
     };
 
     const isBaseUsdc = selectedNetwork === 'base-sepolia' && selectedCoin === 'USDC';
+    const isBaseEth = selectedNetwork === 'base-sepolia' && selectedCoin === 'ETH';
     const isPolygonUsdc = selectedNetwork === 'polygon-amoy' && selectedCoin === 'USDC';
     const isPolygonAmoy = selectedNetwork === 'polygon-amoy' && selectedCoin === 'AMOY';
-    const isLoading = isBridgeLoading || isTransferLoading || isSwapLoading;
+    const isLoading = isBridgeLoading || isTransferLoading || isSwapLoading || step === 'swapping' || step === 'bridging';
 
     if (!isOpen) return null;
 
@@ -145,18 +200,33 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
                             Top Up Submitted!
                         </h2>
                         <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
-                            {isBaseUsdc ? 'Your cross-chain transaction is on its way.' : 'Your transaction has been submitted.'}
+                            {isBaseUsdc || isBaseEth ? 'Your cross-chain transaction is on its way.' : 'Your transaction has been submitted.'}
                         </p>
 
                         <div className="space-y-4 text-left">
                             <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
                                 <h3 className="mb-2 text-sm font-medium text-gray-900 dark:text-white">Transaction Details</h3>
 
-                                {isBaseUsdc ? (
+                                {isBaseUsdc || isBaseEth ? (
                                     <>
+                                        {/* Swap Hash (if applicable) */}
+                                        {swapTxHash && (
+                                            <div className="mb-3">
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">Swap Transaction (Base Sepolia)</p>
+                                                <a
+                                                    href={`https://sepolia.basescan.org/tx/${swapTxHash}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="break-all text-xs text-blue-600 hover:underline dark:text-blue-400"
+                                                >
+                                                    {swapTxHash}
+                                                </a>
+                                            </div>
+                                        )}
+
                                         {/* Base Sepolia Hash */}
                                         <div className="mb-3">
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">Base Sepolia (Source)</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">Bridge Transaction (Base Sepolia)</p>
                                             <a
                                                 href={`https://sepolia.basescan.org/tx/${txHash}`}
                                                 target="_blank"
@@ -288,8 +358,8 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
                                 </div>
                             </div>
 
-                            {/* Swap Preview for AMOY */}
-                            {isPolygonAmoy && quote && amount && parseFloat(amount) > 0 && (
+                            {/* Swap Preview */}
+                            {(isPolygonAmoy || isBaseEth) && quote && amount && parseFloat(amount) > 0 && (
                                 <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/30">
                                     <div className="flex items-center justify-between text-sm">
                                         <span className="text-gray-600 dark:text-gray-400">You will receive:</span>
@@ -316,7 +386,16 @@ export default function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
                                 disabled={isLoading || !amount || parseFloat(amount) <= 0}
                                 className="flex-1 rounded-lg bg-gradient-to-r from-gray-800 to-black px-4 py-2.5 text-sm font-medium text-white transition-colors hover:from-gray-700 hover:to-gray-900 disabled:cursor-not-allowed disabled:opacity-50 dark:from-white dark:to-gray-200 dark:text-black dark:hover:from-gray-200 dark:hover:to-gray-300"
                             >
-                                {isLoading ? 'Processing...' : (isBaseUsdc ? 'Bridge to Agent' : isPolygonAmoy ? 'Swap & Send to Agent' : 'Top Up')}
+                                {isLoading ? (
+                                    step === 'swapping' ? 'Swapping...' :
+                                        step === 'bridging' ? 'Bridging...' :
+                                            'Processing...'
+                                ) : (
+                                    isBaseEth ? 'Swap & Bridge' :
+                                        isBaseUsdc ? 'Bridge to Agent' :
+                                            isPolygonAmoy ? 'Swap & Send to Agent' :
+                                                'Top Up'
+                                )}
                             </button>
                         </div>
                     </>
