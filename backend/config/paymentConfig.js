@@ -8,7 +8,7 @@ export const PAYMENT_RECIPIENT_ADDRESS = "0xa6f7df49e2d4b48bc1eea0886fb8798fb510
 /**
  * Payment configuration for different routes
  */
-export const PAYMENT_ROUTES = {
+export let PAYMENT_ROUTES = {
   "GET /blog": {
     price: "$0.01",  // 1 cent per blog access
     network: "polygon-amoy",
@@ -23,6 +23,15 @@ export const PAYMENT_ROUTES = {
     }
   },
 };
+
+/**
+ * Updates the payment routes and recreates the middleware
+ * @param {Object} newRoutes - New payment routes object
+ */
+export function updatePaymentRoutes(newRoutes) {
+  PAYMENT_ROUTES = { ...PAYMENT_ROUTES, ...newRoutes };
+  console.log("Updated PAYMENT_ROUTES:", Object.keys(PAYMENT_ROUTES));
+}
 
 /**
  * Creates payment middleware with configuration
@@ -50,14 +59,16 @@ export function createPaymentMiddleware(paymentAddress, facilitatorUrl) {
  * 3. Grants access when payment is valid
  */
 export function conditionalPaymentEnforcement(paymentAddress, facilitatorUrl) {
-  // Create the x402 payment middleware once
-  const paymentMW = createPaymentMiddleware(paymentAddress, facilitatorUrl);
-  
+  // We need to create the middleware dynamically because PAYMENT_ROUTES changes
+
   return (req, res, next) => {
     if (req.isAICrawler) {
       // AI crawler detected - apply payment enforcement
       console.log('   💰 AI crawler detected, enforcing payment...');
-      
+
+      // Create fresh middleware with current routes
+      const paymentMW = createPaymentMiddleware(paymentAddress, facilitatorUrl);
+
       // Let x402-express middleware handle everything:
       // - If no x-payment header: returns 402 Payment Required
       // - If x-payment header present: verifies with facilitator

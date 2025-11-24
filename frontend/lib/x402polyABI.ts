@@ -75,6 +75,12 @@ export const x402polyABI = [
         name: "owner",
         type: "address",
       },
+      {
+        indexed: false,
+        internalType: "string",
+        name: "url",
+        type: "string",
+      },
     ],
     name: "SiteRegistered",
     type: "event",
@@ -179,6 +185,11 @@ export const x402polyABI = [
         name: "price",
         type: "uint256",
       },
+      {
+        internalType: "string",
+        name: "url",
+        type: "string",
+      },
     ],
     name: "registerSite",
     outputs: [],
@@ -204,6 +215,11 @@ export const x402polyABI = [
         internalType: "address",
         name: "owner",
         type: "address",
+      },
+      {
+        internalType: "string",
+        name: "url",
+        type: "string",
       },
       {
         internalType: "bool",
@@ -237,6 +253,41 @@ export const x402polyABI = [
     name: "withdraw",
     outputs: [],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getAllSites",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "uint256",
+            name: "price",
+            type: "uint256",
+          },
+          {
+            internalType: "address",
+            name: "owner",
+            type: "address",
+          },
+          {
+            internalType: "string",
+            name: "url",
+            type: "string",
+          },
+          {
+            internalType: "bool",
+            name: "exists",
+            type: "bool",
+          },
+        ],
+        internalType: "struct x402poly.Site[]",
+        name: "",
+        type: "tuple[]",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
 ] as const;
