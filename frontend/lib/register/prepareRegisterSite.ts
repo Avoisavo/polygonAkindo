@@ -18,7 +18,7 @@ export function prepareRegisterSite(url: string, price: string) {
     address: X402POLY_CONTRACT,
     abi: x402polyABI,
     functionName: 'registerSite' as const,
-    args: [siteId, priceInWei] as const,
+    args: [siteId, priceInWei, url] as const,
   };
 }
 
