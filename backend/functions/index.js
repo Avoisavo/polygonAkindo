@@ -1,30 +1,16 @@
-import { scrapeWebsite } from './scrapeWebsite.js';
+import { scrapeWebsite, metadata as scrapeMetadata } from './scrapeWebsite.js';
+import { getWalletBalance, metadata as balanceMetadata } from './getWalletBalance.js';
 
 // Available functions for the AI agent
 const functions = {
-  scrapeWebsite
+  scrapeWebsite,
+  getWalletBalance
 };
 
 // Function metadata for OpenAI function calling
 const functionDefinitions = [
-  {
-    name: 'scrapeWebsite',
-    description: 'Scrape content from a website URL and return the main text content, title, and metadata. Agent will automatically pay for paywalled content.',
-    parameters: {
-      type: 'object',
-      properties: {
-        url: {
-          type: 'string',
-          description: 'The website URL to scrape (must include http:// or https://)'
-        },
-        userId: {
-          type: 'string',
-          description: 'Optional: User ID (wallet address) to charge for the service'
-        }
-      },
-      required: ['url']
-    }
-  }
+  scrapeMetadata,
+  balanceMetadata
 ];
 
 /**
@@ -34,11 +20,22 @@ async function executeFunction(functionName, args) {
   if (!functions[functionName]) {
     throw new Error(`Function '${functionName}' not found`);
   }
-  
+
   console.log(`🔧 Executing function: ${functionName}`, args);
-  const result = await functions[functionName](args.url, args.userId);
+
+  // Handle different function signatures
+  let result;
+  if (functionName === 'scrapeWebsite') {
+    result = await functions[functionName](args.url, args.userId);
+  } else if (functionName === 'getWalletBalance') {
+    result = await functions[functionName](args.address);
+  } else {
+    // Generic call for other functions
+    result = await functions[functionName](args);
+  }
+
   console.log(`✅ Function ${functionName} completed`);
-  
+
   return result;
 }
 

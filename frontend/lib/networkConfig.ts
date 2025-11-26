@@ -24,6 +24,25 @@ export const polygonAmoy = {
   testnet: true,
 } as const satisfies Chain;
 
+
+
+// Base Sepolia Testnet Configuration
+export const baseSepolia = {
+  id: 84532,
+  name: 'Base Sepolia Testnet',
+  iconUrl: 'https://avatars.githubusercontent.com/u/108554348?s=280&v=4',
+  iconBackground: '#fff',
+  nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://sepolia.base.org'] },
+    public: { http: ['https://sepolia.base.org'] },
+  },
+  blockExplorers: {
+    default: { name: 'BaseScan', url: 'https://sepolia.basescan.org' },
+  },
+  testnet: true,
+} as const satisfies Chain;
+
 // Network information
 export const getNetworkInfo = () => {
   return {
@@ -38,9 +57,19 @@ export const getNetworkInfo = () => {
   };
 };
 
-// Export the chain for use in providers
-export const chains = [polygonAmoy] as const;
+// Export the chains for use in providers
+export const chains = [polygonAmoy, baseSepolia] as const;
 
 // Contract Addresses on Polygon Amoy
-export const X402POLY_CONTRACT = '0xebE4F3b0E36203E9F4C810107A9d41d643E357C4' as const;
-export const PAYMENT_TOKEN = '0x41E94EB019c0762f9cBFCFeE217e8e5252C3fE89' as const; // USDC on Amoy
+export const X402POLY_CONTRACT = '0xe5E43468bcBd09391bF73d0D43a624537c46bBa9' as const;
+export const PAYMENT_TOKEN = '0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582' as const; // USDC on Amoy
+export const AMM_REGISTRY_CONTRACT = '0xAc1531A6b130aa3027130F97e33c80698e5cfafc' as const;
+export const AMM_EXCHANGE_CONTRACT = '0x55EF26B90F38a6DcB9ea98B1257D4666df60933C' as const; // MATIC/USDC Exchange on Amoy
+
+// Contract Addresses on Base Sepolia
+export const BASE_SEPOLIA_REGISTRY = '0x03e69a73090A7E8392bC54BC24316a326020B128' as const;
+export const BASE_SEPOLIA_EXCHANGE = '0x94EAb0B573CC7aa3B6C18318511C73FD583F89a2' as const; // ETH/USDC Exchange on Base Sepolia
+export const BASE_SEPOLIA_USDC = '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as const;
+
+export const AGENT_WALLET = '0x7dec10140f6a10dbdc0b9b4d8ba4d468b1b8e6e6' as const;
+
