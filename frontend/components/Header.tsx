@@ -33,7 +33,7 @@ export function Header() {
 
           {/* Connect Wallet Button */}
           <div className="flex-1 flex items-center justify-end">
-            <ConnectButton />
+            <ConnectButton chainStatus="icon" showBalance={true} />
           </div>
         </div>
       </div>
