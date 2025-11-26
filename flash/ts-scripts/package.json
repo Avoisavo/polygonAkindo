@@ -1,0 +1,19 @@
+{
+    "name": "flash-scripts",
+    "version": "1.0.0",
+    "main": "index.js",
+    "license": "MIT",
+    "scripts": {
+        "fund": "ts-node fund.ts",
+        "direct": "ts-node x402_direct.ts",
+        "escrow": "ts-node x402_escrow.ts"
+    },
+    "dependencies": {
+        "dotenv": "^16.3.1",
+        "ethers": "^6.8.1"
+    },
+    "devDependencies": {
+        "ts-node": "^10.9.1",
+        "typescript": "^5.2.2"
+    }
+}
