@@ -11,14 +11,14 @@ import { X402POLY_CONTRACT, PAYMENT_TOKEN } from '../../lib/networkConfig'
 export default function ContractPage() {
   const [mounted, setMounted] = useState(false)
   const { address, isConnected } = useAccount()
-  
+
   // Register section state
   const [registerUrl, setRegisterUrl] = useState('')
   const [registerPrice, setRegisterPrice] = useState('')
-  
+
   // Scrape section state
   const [scrapeUrl, setScrapeUrl] = useState('')
-  
+
   // Update price section state
   const [updatePriceUrl, setUpdatePriceUrl] = useState('')
   const [updatePriceAmount, setUpdatePriceAmount] = useState('')
@@ -68,7 +68,7 @@ export default function ContractPage() {
         address: X402POLY_CONTRACT,
         abi: x402polyABI,
         functionName: 'registerSite',
-        args: [siteId, priceInWei],
+        args: [siteId, priceInWei, registerUrl],
       })
     } catch (error: any) {
       console.error('Register error:', error)
@@ -412,8 +412,8 @@ export default function ContractPage() {
                             {isApproveSuccess && (
                               <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                                 <p className="text-green-600 dark:text-green-400 text-sm font-semibold">
-                                      ✓ Token approved!
-                                    </p>
+                                  ✓ Token approved!
+                                </p>
                               </div>
                             )}
 
