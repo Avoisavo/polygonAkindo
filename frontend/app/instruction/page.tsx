@@ -191,12 +191,11 @@ export default function InstructionPage() {
                             <section>
                                 <h2 className="text-3xl font-bold text-gray-900 mb-6">SDK Installation</h2>
                                 <p className="text-gray-600 mb-4">
-                                    To interact with the x402 smart contracts, you can use standard libraries like `ethers` or `viem`.
-                                    We also provide a helper ABI file for easier integration.
+                                    To interact with the x402 smart contracts, simply install our official SDK.
                                 </p>
                                 <div className="rounded-lg overflow-hidden shadow-sm">
                                     <SyntaxHighlighter language="bash" style={vscDarkPlus}>
-                                        {`npm install ethers # or viem`}
+                                        {`npm i @polypolygate/x402-sdk`}
                                     </SyntaxHighlighter>
                                 </div>
                             </section>
@@ -529,12 +528,18 @@ const buyAccess = async (siteId: string, price: string) => {
                                     <div className="bg-red-50 p-4 rounded-lg border border-red-100">
                                         <h4 className="font-bold text-red-800 mb-2">Standard Flow (No Escrow)</h4>
                                         <p className="text-sm text-red-600">User pays → Waits for Block Confirmation (~8s) → Gets Data</p>
-                                        <p className="text-2xl font-bold text-red-700 mt-2">~7,693 ms</p>
+                                        <p className="text-2xl font-bold text-red-700 mt-2">~7,880 ms</p>
+                                        <div className="mt-3">
+                                            <img src="/cliLong1.png" alt="Standard Flow CLI Output" className="rounded border border-red-200 shadow-sm" />
+                                        </div>
                                     </div>
                                     <div className="bg-green-50 p-4 rounded-lg border border-green-100">
                                         <h4 className="font-bold text-green-800 mb-2">Flash Flow (With Escrow)</h4>
                                         <p className="text-sm text-green-600">User pays → Escrow Check (Instant) → Gets Data</p>
-                                        <p className="text-2xl font-bold text-green-700 mt-2">~2,562 ms</p>
+                                        <p className="text-2xl font-bold text-green-700 mt-2">~2,650 ms</p>
+                                        <div className="mt-3">
+                                            <img src="/cliShort.png" alt="Flash Flow CLI Output" className="rounded border border-green-200 shadow-sm" />
+                                        </div>
                                     </div>
                                 </div>
                                 <p className="text-center font-bold text-gray-700">
