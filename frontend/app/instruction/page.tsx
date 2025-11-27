@@ -165,25 +165,61 @@ export default function InstructionPage() {
                         {activeSectionId === 'introduction' && (
                             <section>
                                 <h1 className="text-4xl font-bold text-gray-900 mb-6">Introduction</h1>
-                                <p className="text-lg text-gray-600 leading-relaxed">
-                                    Welcome to the x402 SDK documentation. This guide will help you integrate your application with the x402 protocol on Polygon.
-                                    The protocol allows website owners to monetize their content by registering their sites and setting a price for scraping access.
+                                <div className="bg-purple-50 border-l-4 border-purple-500 p-4 mb-6">
+                                    <p className="text-sm text-purple-700 font-medium">
+                                        Built for <strong>Polygon Buildathon: From Launch to Fundraising</strong>
+                                    </p>
+                                </div>
+                                <p className="text-lg text-gray-600 leading-relaxed mb-6">
+                                    Welcome to <strong>PolyGate</strong>, a cutting-edge protocol that redefines how web content is monetized. By leveraging the standard HTTP <code>402 Payment Required</code> status code, we create a seamless, decentralized marketplace connecting data providers with AI agents and users.
                                 </p>
+                                <p className="text-lg text-gray-600 leading-relaxed mb-4">
+                                    Our platform addresses the critical challenges of real-time payments on the blockchain:
+                                </p>
+                                <ul className="list-disc list-inside space-y-2 text-gray-600 mb-6">
+                                    <li><strong>Monetization:</strong> Website owners can easily register endpoints and set prices for content scraping or API access.</li>
+                                    <li><strong>Performance:</strong> Our <strong>Flash Payment</strong> system (backed by escrow) eliminates blockchain latency, enabling instant data delivery.</li>
+                                    <li><strong>Accessibility:</strong> Integrated <strong>Cross-Chain Swaps & Bridging</strong> (via LayerZero) ensure users can easily acquire the necessary USDC from any network.</li>
+                                </ul>
                             </section>
                         )}
 
                         {activeSectionId === 'how-it-works' && (
                             <section>
                                 <h2 className="text-3xl font-bold text-gray-900 mb-6">How it works</h2>
-                                <p className="text-lg text-gray-600 leading-relaxed mb-4">
-                                    The x402 protocol operates as a decentralized marketplace for content access. Here is the high-level flow:
+                                <p className="text-lg text-gray-600 leading-relaxed mb-6">
+                                    The x402 ecosystem connects Content Providers (Sellers) with Data Consumers (Buyers/AI Agents) through a robust set of smart contracts and developer tools on Polygon. Here is the comprehensive workflow:
                                 </p>
-                                <ul className="list-disc list-inside space-y-2 text-gray-600">
-                                    <li><strong>Registration:</strong> Content providers register their websites on the blockchain, setting a price per access.</li>
-                                    <li><strong>Payment:</strong> Data consumers (like AI agents or scrapers) pay the specified fee in tokens to access the content.</li>
-                                    <li><strong>Access:</strong> Upon successful payment, the smart contract records the access right on-chain.</li>
-                                    <li><strong>Withdrawal:</strong> Providers can withdraw their earnings from the contract at any time.</li>
-                                </ul>
+
+                                <div className="space-y-8">
+                                    <div>
+                                        <h3 className="text-xl font-bold text-gray-800 mb-2">1. Monetization via HTTP 402</h3>
+                                        <p className="text-gray-600">
+                                            Sellers register their websites on-chain using our protocol. When a buyer requests a protected resource, the server responds with a <code>402 Payment Required</code> status, including the price and payment details in the headers.
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <h3 className="text-xl font-bold text-gray-800 mb-2">2. Seamless Integration</h3>
+                                        <p className="text-gray-600">
+                                            Using our <code>@polypolygate/x402-sdk</code>, buyers (especially AI agents) automatically handle these 402 responses. The SDK parses the requirement and executes the payment transaction instantly to gain access.
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <h3 className="text-xl font-bold text-gray-800 mb-2">3. Zero-Latency 'Flash' Payments</h3>
+                                        <p className="text-gray-600">
+                                            To overcome blockchain block times (which can take seconds), we introduced the <strong>x402 Flash</strong> flow. Users fund an escrow account once. When making requests, the service provider verifies the escrow balance and delivers content <strong>instantly (0-latency)</strong>, while the actual settlement happens in the background.
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <h3 className="text-xl font-bold text-gray-800 mb-2">4. Cross-Chain Accessibility</h3>
+                                        <p className="text-gray-600">
+                                            We lower the barrier to entry with <strong>x402 Wallet Swap</strong>. Users can swap native tokens (AMOY/ETH) for USDC or bridge funds from other chains (like Base Sepolia via LayerZero) directly within the application, ensuring they always have the necessary currency to pay for data.
+                                        </p>
+                                    </div>
+                                </div>
                             </section>
                         )}
 
