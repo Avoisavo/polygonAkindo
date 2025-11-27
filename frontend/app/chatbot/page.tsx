@@ -297,9 +297,9 @@ export default function ChatbotPage() {
 
                 {/* Greeting */}
                 <div>
-                  <h1 className="text-3xl font-semibold text-gray-900 mb-2">
+                  {/* <h1 className="text-3xl font-semibold text-gray-900 mb-2">
                     Good Morning
-                  </h1>
+                  </h1> */}
                   <h2 className="text-3xl font-semibold text-gray-900">
                     How Can I{' '}
                     <TextType
