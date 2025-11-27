@@ -13,6 +13,7 @@ const SECTIONS = [
     { id: 'register-site', label: 'Register Site', group: 'Seller' },
     { id: 'withdraw', label: 'Withdraw', group: 'Seller' },
     { id: 'buy-access', label: 'Buy Access', group: 'Buyer' },
+    { id: 'x402-flash-start', label: 'Get Started', group: 'x402-flash' },
     { id: 'swap-introduction', label: 'Introduction', group: 'x402 wallet swap' },
     { id: 'swap-amm', label: 'AMM Swaps', group: 'x402 wallet swap' },
     { id: 'swap-layerzero', label: 'LayerZero Bridge', group: 'x402 wallet swap' },
@@ -106,6 +107,19 @@ export default function InstructionPage() {
                                     id="buy-access"
                                     label="Buy Access"
                                     active={activeSectionId === 'buy-access'}
+                                    onClick={setActiveSectionId}
+                                />
+                            </nav>
+                        </div>
+
+                        {/* x402-flash Group */}
+                        <div>
+                            <h3 className="text-xl font-black text-black mb-3 uppercase tracking-wide">x402-flash</h3>
+                            <nav className="space-y-1">
+                                <SidebarLink
+                                    id="x402-flash-start"
+                                    label="Get Started"
+                                    active={activeSectionId === 'x402-flash-start'}
                                     onClick={setActiveSectionId}
                                 />
                             </nav>
@@ -454,6 +468,78 @@ const buyAccess = async (siteId: string, price: string) => {
 };`}
                                     </SyntaxHighlighter>
                                 </div>
+                            </section>
+                        )}
+
+                        {activeSectionId === 'x402-flash-start' && (
+                            <section>
+                                <h2 className="text-3xl font-bold text-gray-900 mb-6">Get Started with x402 Flash</h2>
+
+                                <h3 className="text-xl font-semibold text-gray-800 mb-3">The Problem: Blockchain Latency</h3>
+                                <div className="mb-6">
+                                    <img src="/x402problem.png" alt="Blockchain Latency Problem" className="rounded-lg shadow-md max-w-full h-auto" />
+                                </div>
+                                <p className="text-lg text-gray-600 leading-relaxed mb-4">
+                                    When performing standard blockchain confirmations, users experience significant latency waiting for blocks to be mined. This delay degrades the user experience for real-time applications.
+                                </p>
+
+                                <h3 className="text-xl font-semibold text-gray-800 mb-3 mt-8">The Solution: Escrow-Backed Flash Payments</h3>
+                                <div className="mb-6">
+                                    <img src="/escrowdrawingg.png" alt="Escrow Solution Diagram" className="rounded-lg shadow-md max-w-full h-auto" />
+                                </div>
+
+                                <p className="text-lg text-gray-600 leading-relaxed mb-4">
+                                    We propose a new solution using an <strong>Escrow</strong> mechanism. Users perform a one-time fund to top up their escrow balance.
+                                </p>
+
+                                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                                    <p className="text-sm text-blue-700">
+                                        <strong>Why not deduct directly from Escrow?</strong>
+                                        <br />
+                                        We ensure users maintain control over their assets. Funds in the escrow act as <strong>collateral</strong> to guarantee the service provider gets paid. The actual payment is deducted from the agent's wallet during the transaction, keeping the escrow funds untouched unless a failure occurs. This allows users to freely swap or bridge their wallet assets as demonstrated previously.
+                                    </p>
+                                </div>
+
+                                <h3 className="text-xl font-semibold text-gray-800 mb-3">How it Works</h3>
+                                <ul className="list-decimal list-inside space-y-3 text-gray-600 mb-6">
+                                    <li>
+                                        <strong>Client Initiates Payment:</strong> The client sends a direct payment transaction and passes the payload to the server.
+                                    </li>
+                                    <li>
+                                        <strong>Facilitator Verification:</strong> The facilitator immediately checks the User's <strong>Escrow Balance</strong>.
+                                    </li>
+                                    <li>
+                                        <strong>Instant Delivery (Flash):</strong> If the escrow balance covers the cost, the Seller delivers the service <strong>instantly (0 latency)</strong>, without waiting for the transaction to confirm.
+                                    </li>
+                                    <li>
+                                        <strong>Background Settlement:</strong>
+                                        <ul className="list-disc list-inside ml-6 mt-2 space-y-1">
+                                            <li>If the direct payment <strong>succeeds</strong>, no action is taken (Escrow remains untouched).</li>
+                                            <li>If the direct payment <strong>fails</strong>, the Seller triggers the <code>escrow()</code> function to deduct the cost from the User's Escrow balance as a fallback.</li>
+                                        </ul>
+                                    </li>
+                                </ul>
+
+                                <h3 className="text-xl font-semibold text-gray-800 mb-3">Performance Comparison</h3>
+                                <p className="text-gray-600 mb-4">
+                                    By using the Escrow Flash flow, we significantly reduce the time to data delivery compared to the standard flow.
+                                </p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                    <div className="bg-red-50 p-4 rounded-lg border border-red-100">
+                                        <h4 className="font-bold text-red-800 mb-2">Standard Flow (No Escrow)</h4>
+                                        <p className="text-sm text-red-600">User pays → Waits for Block Confirmation (~8s) → Gets Data</p>
+                                        <p className="text-2xl font-bold text-red-700 mt-2">~7,693 ms</p>
+                                    </div>
+                                    <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+                                        <h4 className="font-bold text-green-800 mb-2">Flash Flow (With Escrow)</h4>
+                                        <p className="text-sm text-green-600">User pays → Escrow Check (Instant) → Gets Data</p>
+                                        <p className="text-2xl font-bold text-green-700 mt-2">~2,562 ms</p>
+                                    </div>
+                                </div>
+                                <p className="text-center font-bold text-gray-700">
+                                    Outcome: The Escrow Flash flow is ~3x faster!
+                                </p>
                             </section>
                         )}
 
