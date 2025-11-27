@@ -61,7 +61,7 @@ export const getNetworkInfo = () => {
 export const chains = [polygonAmoy, baseSepolia] as const;
 
 // Contract Addresses on Polygon Amoy
-export const X402POLY_CONTRACT = '0xe5E43468bcBd09391bF73d0D43a624537c46bBa9' as const;
+export const X402POLY_CONTRACT = '0xebE4F3b0E36203E9F4C810107A9d41d643E357C4' as const;
 export const PAYMENT_TOKEN = '0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582' as const; // USDC on Amoy
 export const AMM_REGISTRY_CONTRACT = '0xAc1531A6b130aa3027130F97e33c80698e5cfafc' as const;
 export const AMM_EXCHANGE_CONTRACT = '0x55EF26B90F38a6DcB9ea98B1257D4666df60933C' as const; // MATIC/USDC Exchange on Amoy

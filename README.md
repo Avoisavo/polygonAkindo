@@ -52,7 +52,7 @@ Polygate (x402) adds a native payment layer to the web specifically for the AI e
 ## Contract Addresses
 
 **Polygon Amoy (Chain ID: 80002)**
-- **x402 Protocol**: `0xe5E43468bcBd09391bF73d0D43a624537c46bBa9`
+- **x402 Protocol**: `0xebE4F3b0E36203E9F4C810107A9d41d643E357C4`
 - **USDC Token**: `0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582`
 - **AMM Registry**: `0xAc1531A6b130aa3027130F97e33c80698e5cfafc`
 - **AMM Exchange (MATIC/USDC)**: `0x55EF26B90F38a6DcB9ea98B1257D4666df60933C`

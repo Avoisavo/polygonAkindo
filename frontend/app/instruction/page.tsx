@@ -795,7 +795,7 @@ console.log('Bridge sent:', bridgeHash);`}
                                             </tr>
                                             <tr>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">x402 Protocol</td>
-                                                <td className="px-6 py-4 text-sm text-gray-500 font-mono">0xe5E43468bcBd09391bF73d0D43a624537c46bBa9</td>
+                                                <td className="px-6 py-4 text-sm text-gray-500 font-mono">0xebE4F3b0E36203E9F4C810107A9d41d643E357C4</td>
                                             </tr>
                                             <tr>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Agent Wallet</td>

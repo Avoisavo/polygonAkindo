@@ -8,7 +8,7 @@ const X402POLY_ABI = [
 ];
 
 // Use the address from environment or default (should match frontend)
-const CONTRACT_ADDRESS = process.env.X402_CONTRACT_ADDRESS || "0xe5E43468bcBd09391bF73d0D43a624537c46bBa9";
+const CONTRACT_ADDRESS = process.env.X402_CONTRACT_ADDRESS || "0xebE4F3b0E36203E9F4C810107A9d41d643E357C4";
 const RPC_URL = process.env.RPC_URL || "https://rpc-amoy.polygon.technology";
 
 export class SmartContractService {
