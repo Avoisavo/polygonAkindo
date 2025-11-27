@@ -65,6 +65,8 @@ Polygate (x402) adds a native payment layer to the web specifically for the AI e
 
 **Other**
 - **Agent Wallet**: `0x7dec10140f6a10dbdc0b9b4d8ba4d468b1b8e6e6`
+- **Seller/buyer smart contract**:0xe5E43468bcBd09391bF73d0D43a624537c46bBa9
+- **Escrow contract**: 0x1EB9544fE102CE9545e5B1bB96741148D75cB01a
 
 ## Team
 - **Loy Qun Jie**
